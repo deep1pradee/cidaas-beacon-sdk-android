@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">cidaaasbeaconsdk</string>
+    <string name="Ufo">UFO</string>
+    <string name="Estimote">Estimote</string>
+    <string name="RadiusNetwork">RadiusNetwork</string>
+    <string name="AirLocate">AirLocate</string>
+    <string name="WeChat1">WeChat1</string>
+    <string name="WeChat2">WeChat2</string>
+    <string name="UUID">UUID</string>
 </resources>

@@ -1,7 +1,11 @@
-package i.widaas.cidaaasbeaconsdk;
+package cidaasbeaconsdk;
+
+import cidaasbeaconsdk.Entity.Beacon;
 
 public interface BeaconEvents {
-    public void didEnterRegion();
+    public void didEnterRegion(Beacon beacon);
 
-    public void didExitRegion();
+    public void didExitRegion(Beacon beacon);
+
+    public void didBeaconsInRange(Beacon beacon);
 }
