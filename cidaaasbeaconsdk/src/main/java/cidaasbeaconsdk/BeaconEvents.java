@@ -8,4 +8,8 @@ public interface BeaconEvents {
     public void didExitRegion(Beacon beacon);
 
     public void didBeaconsInRange(Beacon beacon);
+
+
+    void didDetermineStateForRegion(int var1, Beacon beacon);
+
 }

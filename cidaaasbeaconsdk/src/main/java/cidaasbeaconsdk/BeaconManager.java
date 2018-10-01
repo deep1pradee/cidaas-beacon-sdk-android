@@ -11,8 +11,10 @@ import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
 import org.altbeacon.beacon.BeaconParser;
 import org.altbeacon.beacon.Identifier;
+import org.altbeacon.beacon.MonitorNotifier;
 import org.altbeacon.beacon.RangeNotifier;
 import org.altbeacon.beacon.Region;
+import org.altbeacon.beacon.service.RangedBeacon;
 import org.altbeacon.beacon.startup.BootstrapNotifier;
 import org.altbeacon.beacon.startup.RegionBootstrap;
 
@@ -33,26 +35,21 @@ public class BeaconManager {
     static BeaconConsumer beaconConsumer;
     static Intent serviceIntent;
 
-    public static void registerEvents(BeaconEvents beaconEvents) {
+    public void registerEvents(BeaconEvents beaconEvents) {
         mBeaconEvents = beaconEvents;
     }
 
     public BeaconManager(Context context) {
         mContext = context;
         beaconHelper = new BeaconHelper();
-
         beaconManager = org.altbeacon.beacon.BeaconManager.getInstanceForApplication(mContext);
         beaconManager.getBeaconParsers().add(new BeaconParser()
-                .setBeaconLayout("m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24,d:25-25"));
-        beaconManager.getBeaconParsers().add(new BeaconParser()
                 .setBeaconLayout("m:2-3=beac,i:4-19,i:20-21,i:22-23,p:24-24,d:25-25"));
-        Region region = new Region("org.altbeacon.beaconreference",
-                Identifier.parse("4b54504c-5546-4f00-0000-000000000001"), null, null);
-        setUpConsumer(region);
-        setUpBootStrapNotifier(region);
+
+
     }
 
-    private static void setUpBootStrapNotifier(Region region) {
+    private void setUpBootStrapNotifier(Region region) {
         BootstrapNotifier bootstrapNotifier = new BootstrapNotifier() {
             @Override
             public Context getApplicationContext() {
@@ -79,7 +76,19 @@ public class BeaconManager {
         RegionBootstrap regionBootstrap = new RegionBootstrap(bootstrapNotifier, region);
     }
 
-    private static void setUpConsumer(final Region region) {
+    // By default the AndroidBeaconLibrary will only find AltBeacons.  If you wish to make it
+    // find a different type of beacon, you must specify the byte layout for that beacon's
+    // advertisement with a line like below.  The example shows how to find a beacon with the
+    // same byte layout as AltBeacon but with a beaconTypeCode of 0xaabb.  To find the proper
+    // layout expression for other beacon types, do a web search for "setBeaconLayout"
+    // including the quotes.
+    public void setBeaconLayout(String beaconLayout) {
+        //"m:2-3=beac,i:4-19,i:20-21,i:22-23,p:24-24,d:25-25"
+        beaconManager.getBeaconParsers().add(new BeaconParser()
+                .setBeaconLayout(beaconLayout));
+    }
+
+    private void bindService(final Region region) {
         beaconConsumer = new BeaconConsumer() {
             @Override
             public void onBeaconServiceConnect() {
@@ -126,6 +135,15 @@ public class BeaconManager {
         beaconManager.bind(beaconConsumer);
     }
 
+    public void unbind() {
+        if (beaconManager != null)
+            beaconManager.unbind(beaconConsumer);
+    }
+
+    public void setUpBackgroundMode(boolean isBackgroundMode) {
+        if (beaconManager != null && beaconManager.isBound(beaconConsumer))
+            beaconManager.setBackgroundMode(isBackgroundMode);
+    }
 
     @NonNull
     private static cidaasbeaconsdk.Entity.Beacon setBeacon(Beacon mBeacon, Region region) {
@@ -151,17 +169,76 @@ public class BeaconManager {
         return beacon;
     }
 
+    public void setExpirationMilliseconds(long milliseconds) {
+        RangedBeacon.setSampleExpirationMilliseconds(milliseconds);
+    }
 
-    public static List<BeaconModel> getBeaconUUIDs() {
+    public void startBeaconMonitoring(final List<BeaconModel> beaconList) {
+        beaconConsumer = new BeaconConsumer() {
+
+            @Override
+            public void onBeaconServiceConnect() {
+                beaconManager.addMonitorNotifier(new MonitorNotifier() {
+                    @Override
+                    public void didEnterRegion(Region region) {
+                        if (mBeaconEvents != null)
+                            mBeaconEvents.didEnterRegion(setBeacon(null, region));
+                    }
+
+                    @Override
+                    public void didExitRegion(Region region) {
+                        if (mBeaconEvents != null)
+                            mBeaconEvents.didExitRegion(setBeacon(null, region));
+                    }
+
+                    @Override
+                    public void didDetermineStateForRegion(int i, Region region) {
+                        if (mBeaconEvents != null)
+                            mBeaconEvents.didExitRegion(setBeacon(null, region));
+                    }
+                });
+                for (int i = 0; i < beaconList.size(); i++) {
+                    Region region = new Region(beaconList.get(i).getName(),
+                            Identifier.parse(beaconList.get(i).getUuid()), null, null);
+                    try {
+                        beaconManager.startMonitoringBeaconsInRegion(region);
+                    } catch (Exception ex) {
+
+                    }
+                }
+            }
+
+            @Override
+            public Context getApplicationContext() {
+                return mContext;
+            }
+
+            @Override
+            public void unbindService(ServiceConnection serviceConnection) {
+                mContext.unbindService(serviceConnection);
+                mContext.stopService(serviceIntent);
+            }
+
+            @Override
+            public boolean bindService(Intent intent, ServiceConnection serviceConnection, int i) {
+                serviceIntent = intent;
+                mContext.startService(intent);
+                return mContext.bindService(intent, serviceConnection, i);
+
+            }
+        };
+
+    }
+
+    public List<BeaconModel> getBeaconUUIDs() {
         return beaconHelper.getUUID();
     }
 
-    public static void startMonitoringBeacons(List<BeaconModel> beaconList) {
+    public void startBeaconRanging(List<BeaconModel> beaconList) {
         for (int i = 0; i < beaconList.size(); i++) {
             Region region = new Region(beaconList.get(i).getName(),
                     Identifier.parse(beaconList.get(i).getUuid()), null, null);
-            setUpConsumer(region);
-          //  setUpBootStrapNotifier(region);
+            bindService(region);
         }
     }
 }
