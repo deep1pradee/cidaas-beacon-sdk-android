@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.RemoteException;
 import android.support.annotation.NonNull;
-import android.util.Log;
 
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
@@ -15,8 +14,6 @@ import org.altbeacon.beacon.MonitorNotifier;
 import org.altbeacon.beacon.RangeNotifier;
 import org.altbeacon.beacon.Region;
 import org.altbeacon.beacon.service.RangedBeacon;
-import org.altbeacon.beacon.startup.BootstrapNotifier;
-import org.altbeacon.beacon.startup.RegionBootstrap;
 
 import java.util.Collection;
 import java.util.List;
@@ -24,6 +21,7 @@ import java.util.List;
 import cidaasbeaconsdk.Entity.BeaconModel;
 import cidaasbeaconsdk.Entity.Proximity;
 import cidaasbeaconsdk.Helper.BeaconHelper;
+import timber.log.Timber;
 
 
 public class BeaconManager {
@@ -46,35 +44,9 @@ public class BeaconManager {
         beaconManager.getBeaconParsers().add(new BeaconParser()
                 .setBeaconLayout("m:2-3=beac,i:4-19,i:20-21,i:22-23,p:24-24,d:25-25"));
 
-
+        Beacon.setHardwareEqualityEnforced(true);
     }
 
-    private void setUpBootStrapNotifier(Region region) {
-        BootstrapNotifier bootstrapNotifier = new BootstrapNotifier() {
-            @Override
-            public Context getApplicationContext() {
-                return mContext;
-            }
-
-            @Override
-            public void didEnterRegion(Region region) {
-                if (mBeaconEvents != null)
-                    mBeaconEvents.didEnterRegion(setBeacon(null, region));
-            }
-
-            @Override
-            public void didExitRegion(Region region) {
-                if (mBeaconEvents != null)
-                    mBeaconEvents.didExitRegion(setBeacon(null, region));
-            }
-
-            @Override
-            public void didDetermineStateForRegion(int i, Region region) {
-                Log.d("mainactivity", "didDetermineStateForRegion: ");
-            }
-        };
-        RegionBootstrap regionBootstrap = new RegionBootstrap(bootstrapNotifier, region);
-    }
 
     // By default the AndroidBeaconLibrary will only find AltBeacons.  If you wish to make it
     // find a different type of beacon, you must specify the byte layout for that beacon's
@@ -100,7 +72,7 @@ public class BeaconManager {
                             Beacon firstBeacon = beacons.iterator().next();
                             if (mBeaconEvents != null)
                                 mBeaconEvents.didBeaconsInRange(setBeacon(firstBeacon, null));
-                            Log.d("beacon", "didRangeBeaconsInRegion: " + firstBeacon.getBluetoothAddress() + " distance " + firstBeacon.getDistance());
+                            Timber.d("didRangeBeaconsInRegion: " + firstBeacon.getBluetoothAddress() + " distance " + firstBeacon.getDistance());
                         }
                     }
                 });
@@ -164,7 +136,12 @@ public class BeaconManager {
                 beacon.setProximity(Proximity.UNKNOWN);
             }
         } else if (region != null) {
-            Log.d("Manager", "setBeacon: " + region.toString());
+            beacon.setUuid(region.getId1().toUuid().toString());
+            if (region.getId2() != null)
+                beacon.setMajor(region.getId2().toString());
+            if (region.getId3() != null)
+                beacon.setMinor(region.getId3().toString());
+            Timber.d("Manager", "setBeacon: " + region.toString());
         }
         return beacon;
     }
@@ -174,59 +151,79 @@ public class BeaconManager {
     }
 
     public void startBeaconMonitoring(final List<BeaconModel> beaconList) {
-        beaconConsumer = new BeaconConsumer() {
+        if (beaconManager != null && beaconManager.isBound(beaconConsumer)) {
+            addMonitoringNotifier(beaconList);
+            Timber.d(TAG, "startBeaconMonitoring: isbound");
+        } else {
+            Timber.d(TAG, "startBeaconMonitoring: notbound");
+            beaconConsumer = new BeaconConsumer() {
 
-            @Override
-            public void onBeaconServiceConnect() {
-                beaconManager.addMonitorNotifier(new MonitorNotifier() {
-                    @Override
-                    public void didEnterRegion(Region region) {
-                        if (mBeaconEvents != null)
-                            mBeaconEvents.didEnterRegion(setBeacon(null, region));
-                    }
+                @Override
+                public void onBeaconServiceConnect() {
+                    addMonitoringNotifier(beaconList);
+                }
 
-                    @Override
-                    public void didExitRegion(Region region) {
-                        if (mBeaconEvents != null)
-                            mBeaconEvents.didExitRegion(setBeacon(null, region));
-                    }
+                @Override
+                public Context getApplicationContext() {
+                    return mContext;
+                }
 
-                    @Override
-                    public void didDetermineStateForRegion(int i, Region region) {
-                        if (mBeaconEvents != null)
-                            mBeaconEvents.didExitRegion(setBeacon(null, region));
-                    }
-                });
-                for (int i = 0; i < beaconList.size(); i++) {
-                    Region region = new Region(beaconList.get(i).getName(),
-                            Identifier.parse(beaconList.get(i).getUuid()), null, null);
-                    try {
-                        beaconManager.startMonitoringBeaconsInRegion(region);
-                    } catch (Exception ex) {
+                @Override
+                public void unbindService(ServiceConnection serviceConnection) {
+                    mContext.unbindService(serviceConnection);
+                    mContext.stopService(serviceIntent);
+                }
 
-                    }
+                @Override
+                public boolean bindService(Intent intent, ServiceConnection serviceConnection, int i) {
+                    serviceIntent = intent;
+                    mContext.startService(intent);
+                    return mContext.bindService(intent, serviceConnection, i);
+
+                }
+            };
+            beaconManager.bind(beaconConsumer);
+        }
+
+
+    }
+
+    private void addMonitoringNotifier(List<BeaconModel> beaconList) {
+        try {
+            beaconManager.addMonitorNotifier(new MonitorNotifier() {
+                @Override
+                public void didEnterRegion(Region region) {
+                    if (mBeaconEvents != null)
+                        mBeaconEvents.didEnterRegion(setBeacon(null, region));
+                }
+
+                @Override
+                public void didExitRegion(Region region) {
+                    if (mBeaconEvents != null)
+                        mBeaconEvents.didExitRegion(setBeacon(null, region));
+                }
+
+                @Override
+                public void didDetermineStateForRegion(int i, Region region) {
+                /* int INSIDE = 1;
+                   int OUTSIDE = 0;*/
+                    if (mBeaconEvents != null)
+                        mBeaconEvents.didDetermineStateForRegion(i, setBeacon(null, region));
+                }
+            });
+            for (int i = 0; i < beaconList.size(); i++) {
+                Region region = new Region(beaconList.get(i).getName(),
+                        Identifier.parse(beaconList.get(i).getUuid()), Identifier.parse(beaconList.get(i).getMajor().toString()),
+                        Identifier.parse(beaconList.get(i).getMinor().toString()));
+                try {
+                    beaconManager.startMonitoringBeaconsInRegion(region);
+                } catch (Exception ex) {
+                    Timber.d("startMonitoringBeaconsInRegion" + ex.getMessage());
                 }
             }
-
-            @Override
-            public Context getApplicationContext() {
-                return mContext;
-            }
-
-            @Override
-            public void unbindService(ServiceConnection serviceConnection) {
-                mContext.unbindService(serviceConnection);
-                mContext.stopService(serviceIntent);
-            }
-
-            @Override
-            public boolean bindService(Intent intent, ServiceConnection serviceConnection, int i) {
-                serviceIntent = intent;
-                mContext.startService(intent);
-                return mContext.bindService(intent, serviceConnection, i);
-
-            }
-        };
+        } catch (Exception ex) {
+            Timber.d(ex.getMessage());
+        }
 
     }
 

@@ -9,7 +9,8 @@ public interface BeaconEvents {
 
     public void didBeaconsInRange(Beacon beacon);
 
-
+    /* int INSIDE = 1;
+        int OUTSIDE = 0;*/
     void didDetermineStateForRegion(int var1, Beacon beacon);
 
 }

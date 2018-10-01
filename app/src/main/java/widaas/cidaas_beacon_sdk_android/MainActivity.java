@@ -22,6 +22,7 @@ import cidaasbeaconsdk.BeaconEvents;
 import cidaasbeaconsdk.BeaconManager;
 import cidaasbeaconsdk.Entity.Beacon;
 import cidaasbeaconsdk.Entity.BeaconModel;
+import timber.log.Timber;
 
 public class MainActivity extends AppCompatActivity implements BeaconEvents {
     BeaconManager beaconMonitor;
@@ -32,7 +33,7 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        txtview =(TextView) findViewById(R.id.txtview);
+        txtview = (TextView) findViewById(R.id.txtview);
         beaconMonitor = new BeaconManager(this);
         beaconMonitor.registerEvents(this);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -42,7 +43,7 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
 
         if (model != null && model.size() > 0) {
             for (int i = 0; i < model.size(); i++) {
-                Log.d("MainActivity", "onCreate: " + model.get(i));
+                Timber.d("MainActivity", "onCreate: " + model.get(i));
 
             }
         }
@@ -105,25 +106,25 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
 
     @Override
     public void didEnterRegion(Beacon beacon) {
-        sendNotification("Enter " + beacon.getUuid());
+        sendNotification("Enter " +beacon.getUuid() + " major " + beacon.getMajor() + " minor " + beacon.getMinor());
         txtview.setText("didEnterRegion");
-        Log.d("MainActivity", "didEnterRegion: " + beacon.getUuid());
+        Log.d("MainActivity", "didEnterRegion: " + beacon.getUuid()+ " major " + beacon.getMajor() + " minor " + beacon.getMinor());
         Toast.makeText(this, " didEnterRegion ", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void didExitRegion(Beacon beacon) {
-        sendNotification("Exit " + beacon.getUuid());
+        sendNotification("Exit " + beacon.getUuid() + " major " + beacon.getMajor() + " minor " + beacon.getMinor());
         txtview.setText("didExitRegion");
-        Log.d("MainActivity", "didExitRegion: " + beacon.getUuid());
+        Log.d("MainActivity", "didExitRegion: " + beacon.getUuid() + " major " + beacon.getMajor() + " minor " + beacon.getMinor());
         Toast.makeText(this, " didExitRegion ", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void didBeaconsInRange(Beacon beacon) {
-        txtview.setText("didBeaconsInRange");
-        Log.d("MainActivity ", "didBeaconsInRange: " + beacon.getUuid() + " minor " + beacon.getMinor());
-        Toast.makeText(this, " didBeaconsInRange ", Toast.LENGTH_SHORT).show();
+        //  txtview.setText("didBeaconsInRange");
+        Log.d("MainActivity ", "didBeaconsInRange: " + beacon.getUuid() + " major " + beacon.getMajor() + " minor " + beacon.getMinor());
+        //  Toast.makeText(this, " didBeaconsInRange ", Toast.LENGTH_SHORT).show();
     }
 
     @Override
