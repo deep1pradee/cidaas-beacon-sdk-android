@@ -13,6 +13,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.List;
@@ -25,11 +26,13 @@ import cidaasbeaconsdk.Entity.BeaconModel;
 public class MainActivity extends AppCompatActivity implements BeaconEvents {
     BeaconManager beaconMonitor;
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 456;
+    TextView txtview;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        txtview =(TextView) findViewById(R.id.txtview);
         beaconMonitor = new BeaconManager(this);
         beaconMonitor.registerEvents(this);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -103,6 +106,7 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
     @Override
     public void didEnterRegion(Beacon beacon) {
         sendNotification("Enter " + beacon.getUuid());
+        txtview.setText("didEnterRegion");
         Log.d("MainActivity", "didEnterRegion: " + beacon.getUuid());
         Toast.makeText(this, " didEnterRegion ", Toast.LENGTH_SHORT).show();
     }
@@ -110,18 +114,21 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
     @Override
     public void didExitRegion(Beacon beacon) {
         sendNotification("Exit " + beacon.getUuid());
+        txtview.setText("didExitRegion");
         Log.d("MainActivity", "didExitRegion: " + beacon.getUuid());
         Toast.makeText(this, " didExitRegion ", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void didBeaconsInRange(Beacon beacon) {
+        txtview.setText("didBeaconsInRange");
         Log.d("MainActivity ", "didBeaconsInRange: " + beacon.getUuid() + " minor " + beacon.getMinor());
         Toast.makeText(this, " didBeaconsInRange ", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void didDetermineStateForRegion(int var1, Beacon var2) {
+        txtview.setText("didDetermineStateForRegion");
         Log.d("MAinActivity", "didDetermineStateForRegion: ");
         Toast.makeText(this, "Beacon state changed!", Toast.LENGTH_SHORT).show();
     }
