@@ -1,6 +1,6 @@
 package cidaasbeaconsdk.Entity;
 
-public class Beacon {
+public class BeaconEntity {
 
     String uuid;
     double distance;
@@ -9,6 +9,14 @@ public class Beacon {
     String minor;
     String major;
     String bluetoothAddress;
+
+    public BeaconEntity( String name,String uuid) {
+        this.uuid = uuid;
+        this.name = name;
+    }
+
+    public BeaconEntity() {
+    }
 
     public String getMinor() {
         return minor;
