@@ -3,7 +3,6 @@ package cidaasbeaconsdk;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.os.RemoteException;
 import android.support.annotation.NonNull;
 
 import org.altbeacon.beacon.Beacon;
@@ -15,7 +14,6 @@ import org.altbeacon.beacon.RangeNotifier;
 import org.altbeacon.beacon.Region;
 import org.altbeacon.beacon.service.RangedBeacon;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -104,18 +102,6 @@ public class BeaconManager {
         RangedBeacon.setSampleExpirationMilliseconds(milliseconds);
     }
 
-    public void startBeaconMonitoring(BeaconEntity beaconModel) {
-        List<BeaconEntity> beaconModelList = new ArrayList<>();
-        beaconModelList.add(beaconModel);
-        if (beaconManager != null && beaconManager.isBound(beaconConsumer)) {
-            addMonitoringNotifier(beaconModelList);
-            Timber.d(TAG, "startBeaconMonitoring: is bound");
-        } else {
-            Timber.d(TAG, "startBeaconMonitoring: not bound");
-            setUpConsumer(beaconModelList);
-        }
-    }
-
     public void startBeaconMonitoring(final List<BeaconEntity> beaconList) {
         if (beaconManager != null && beaconManager.isBound(beaconConsumer)) {
             addMonitoringNotifier(beaconList);
@@ -165,7 +151,6 @@ public class BeaconManager {
                 public void didEnterRegion(Region region) {
                     if (mBeaconEvents != null) {
                         mBeaconEvents.didEnterRegion(setBeacon(null, region));
-                        startRangingBeacons(region);
                     }
                 }
 
@@ -184,6 +169,16 @@ public class BeaconManager {
                     }
                 }
             });
+            beaconManager.addRangeNotifier(new RangeNotifier() {
+                @Override
+                public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
+                    if (beacons.size() > 0) {
+                        Beacon firstBeacon = beacons.iterator().next();
+                        if (mBeaconEvents != null)
+                            mBeaconEvents.didBeaconsInRange(setBeacon(firstBeacon, null));
+                    }
+                }
+            });
             for (int i = 0; i < beaconList.size(); i++) {
                 Identifier id1 = null, id2 = null, id3 = null;
                 id1 = Identifier.parse(beaconList.get(i).getUuid());
@@ -195,6 +190,7 @@ public class BeaconManager {
                         , id3);
                 try {
                     beaconManager.startMonitoringBeaconsInRegion(region);
+                    beaconManager.startRangingBeaconsInRegion(region);
                 } catch (Exception ex) {
                     Timber.d("startMonitoringBeaconsInRegion" + ex.getMessage());
                 }
@@ -203,25 +199,6 @@ public class BeaconManager {
             Timber.d(ex.getMessage());
         }
 
-    }
-
-    public void startRangingBeacons(Region region) {
-        beaconManager.addRangeNotifier(new RangeNotifier() {
-            @Override
-            public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
-                if (beacons.size() > 0) {
-                    Beacon firstBeacon = beacons.iterator().next();
-                    if (mBeaconEvents != null)
-                        mBeaconEvents.didBeaconsInRange(setBeacon(firstBeacon, null));
-                    Timber.d("didRangeBeaconsInRegion: " + firstBeacon.getBluetoothAddress() + " distance " + firstBeacon.getDistance());
-                }
-            }
-        });
-        try {
-//new Region(beaconEntity.getName(),Identifier.parse(beaconEntity.getUuid()),Identifier.parse(beaconEntity.getMajor()),Identifier.parse(beaconEntity.getMinor()))
-            beaconManager.startRangingBeaconsInRegion(region);
-        } catch (RemoteException e) {
-        }
     }
 
     public List<BeaconEntity> getBeaconUUIDs() {
