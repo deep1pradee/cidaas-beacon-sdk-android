@@ -1,62 +1,28 @@
 package cidaasbeaconsdk.Entity;
 
-public class BeaconEntity {
+import java.io.Serializable;
 
-    String uuid;
-    double distance;
+public class BeaconEntity implements Serializable{
+
+    String[] uuid;
     String name;
-    Proximity proximity;
-    String minor;
-    String major;
-    String bluetoothAddress;
 
-    public BeaconEntity( String name,String uuid) {
+
+    public BeaconEntity( String name,String[] uuid) {
         this.uuid = uuid;
         this.name = name;
     }
 
-    public BeaconEntity() {
-    }
 
-    public String getMinor() {
-        return minor;
-    }
 
-    public void setMinor(String minor) {
-        this.minor = minor;
-    }
-
-    public String getMajor() {
-        return major;
-    }
-
-    public void setMajor(String major) {
-        this.major = major;
-    }
-
-    public String getBluetoothAddress() {
-        return bluetoothAddress;
-    }
-
-    public void setBluetoothAddress(String bluetoothAddress) {
-        this.bluetoothAddress = bluetoothAddress;
-    }
-
-    public String getUuid() {
+    public String[] getUuid() {
         return uuid;
     }
 
-    public void setUuid(String uuid) {
+    public void setUuid(String[] uuid) {
         this.uuid = uuid;
     }
 
-    public double getDistance() {
-        return distance;
-    }
-
-    public void setDistance(double distance) {
-        this.distance = distance;
-    }
 
     public String getName() {
         return name;
@@ -66,11 +32,4 @@ public class BeaconEntity {
         this.name = name;
     }
 
-    public Proximity getProximity() {
-        return proximity;
-    }
-
-    public void setProximity(Proximity proximity) {
-        this.proximity = proximity;
-    }
 }

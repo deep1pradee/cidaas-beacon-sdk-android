@@ -7,4 +7,5 @@
     <string name="WeChat1">WeChat1</string>
     <string name="WeChat2">WeChat2</string>
     <string name="UUID">UUID</string>
+    <string name="baseURL">BaseURL</string>
 </resources>
