@@ -32,6 +32,8 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 456;
     TextView txtview;
     private List<CategoryResponse> model;
+    private String sub="37c8c633-aed4-4ff5-a105-a3bcedba24a5";
+    private String access_token="eyJhbGciOiJSUzI1NiIsImtpZCI6IjEwMjM2ZWZiLWRlMjEtNDI5Mi04ZDRlLTRmZGIxNjhhZDg4ZSJ9.eyJzaWQiOiI1NzQ3Yjk4My1mNTc0LTQ4Y2ItYmZiMC04MGM1ZmIzYmJlMDUiLCJzdWIiOiIxZDY5M2JkNy0yNjNkLTRkZDQtOTRlMC03MDhmYmFiMmFiN2YiLCJpc3ViIjoiMzdjOGM2MzMtYWVkNC00ZmY1LWExMDUtYTNiY2VkYmEyNGE1IiwiYXVkIjoiNGQ1ZTZlMjAtOTM0Ny00MjU1LTk3OTAtNWI3MTk2ODQzMTAzIiwiaWF0IjoxNTM4NzE2MzAzLCJhdXRoX3RpbWUiOjE1Mzg3MTYzMDMsImlzcyI6Imh0dHBzOi8vbmlnaHRseWJ1aWxkLmNpZGFhcy5kZSIsImp0aSI6ImQzNDFhNmU3LTAwOWUtNDU4OC1iMzRmLWY1YzBlYmIyMGJhOCIsIm5vbmNlIjoiMTIzNDUiLCJzY29wZXMiOlsib3BlbmlkIl0sInJvbGVzIjpbIlVTRVIiXSwiZ3JvdXBzIjpbeyJncm91cElkIjoiQ0lEQUFTX0FETUlOUyIsInJvbGVzIjpbIlNFQ09OREFSWV9BRE1JTiJdfV0sImV4cCI6MTUzODgwMjcwMywiZW1haWwiOiJzdXByYWRhcmFvQGdtYWlsLmNvbSIsImdpdmVuX25hbWUiOiJza3JhbyJ9.Ej17vTj7VOm_DETkxiaItnyIMAqmxb76e2VP9ZiJUfOuUiF2qIh89KE8ArNDMvNTLX8knZUo7QDatwZL1rgPaU-YuxJKwIfcEFlSGaH6EF5gv1fCAIKOoNUMgocMNHgv6qcVQp648gjROqb6MWOdslNs2dAWGo5mGovZgXJTt3I";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,13 +47,11 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
         }
         beaconMonitor.setURLFile(getAssets(), "properties.xml");
         beaconMonitor.setBeaconLayout("m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24,d:25-25");
-
         beaconMonitor.getBeaconUUIDs(new Result<CategoryResponseEntity>() {
             @Override
             public void onSuccess(CategoryResponseEntity result) {
                 model=result.getData();
-                beaconMonitor.startBeaconMonitoring(model);
-
+                beaconMonitor.startBeaconMonitoring(model,sub,access_token);
             }
 
             @Override
@@ -62,7 +62,6 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
         if (model != null && model.size() > 0) {
             for (int i = 0; i < model.size(); i++) {
                 Timber.d("MainActivity", "onCreate: " + model.get(i));
-
             }
         }
     }

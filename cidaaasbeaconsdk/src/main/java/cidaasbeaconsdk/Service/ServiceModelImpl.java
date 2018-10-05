@@ -49,11 +49,11 @@ public class ServiceModelImpl implements ServiceModel {
     }
 
     @Override
-    public void updateBeacon(BeaconEmitRequest beacon, String url) {
+    public void updateBeacon(String access_token,BeaconEmitRequest beacon, String url) {
 
         Services services = new Services();
         IService iService = services.createClient(url);
-        iService.beaconEmit(url + BEACON_EMIT_SERVICE, CONTENT_TYPE_JSON, beacon).enqueue(new Callback<ResponseBody>() {
+        iService.beaconEmit(url + BEACON_EMIT_SERVICE, CONTENT_TYPE_JSON,access_token, beacon).enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 if (response.isSuccessful()) {

@@ -5,8 +5,17 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BeaconEmitRequest {
     private String distance;
+    private String sub;
 
     private Geo geo;
+
+    public String getSub() {
+        return sub;
+    }
+
+    public void setSub(String sub) {
+        this.sub = sub;
+    }
 
     private DeviceLocation beacon;
 

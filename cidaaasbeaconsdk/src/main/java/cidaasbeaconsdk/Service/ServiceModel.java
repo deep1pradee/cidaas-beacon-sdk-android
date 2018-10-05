@@ -14,6 +14,6 @@ public interface ServiceModel {
     @GET
     Observable<CategoryResponseEntity> getDefaultConfig(@Url String url, Result<CategoryResponseEntity> result);*/
     public void getDefaultConfig(@Url String url, Result<CategoryResponseEntity> responseEntityResult);
-    public void updateBeacon(BeaconEmitRequest beaconEmitRequest, String url);
+    public void updateBeacon(String access_token,BeaconEmitRequest beaconEmitRequest, String url);
 
 }

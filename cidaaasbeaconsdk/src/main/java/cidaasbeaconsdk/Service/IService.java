@@ -15,6 +15,7 @@ public interface IService {
     @POST
     Call<ResponseBody> beaconEmit(@Url String url,
                                   @Header("Content-Type") String content_type,
+                                  @Header("access_token") String acess_token,
                                   @Body BeaconEmitRequest request);
     @POST
     Call<ResponseBody> locationEmit(@Url String url,

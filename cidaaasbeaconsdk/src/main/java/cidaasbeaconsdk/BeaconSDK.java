@@ -133,19 +133,35 @@ public class BeaconSDK {
         RangedBeacon.setSampleExpirationMilliseconds(milliseconds);
     }
 
-    public void startBeaconMonitoring(final List<CategoryResponse> beaconList) {
+    public void startBeaconMonitoring(final List<CategoryResponse> beaconList, final String sub, final String access_token) {
+        ErrorEntity errorEntity;
         if (SDKEntity.SDKEntityInstance != null && SDKEntity.SDKEntityInstance.getBaseUrl() != null &&
                 !SDKEntity.SDKEntityInstance.getBaseUrl().equals("")) {
-            if (beaconManager != null && beaconManager.isBound(beaconConsumer)) {
-                addMonitoringNotifier(beaconList);
-                Timber.d(TAG, "startBeaconMonitoring: is bound");
+            if (beaconList != null && beaconList.size() != 0) {
+                setBeaconList(beaconList, sub, access_token);
             } else {
-                Timber.d(TAG, "startBeaconMonitoring: not bound");
-                setUpConsumer(beaconList);
+                getBeaconUUIDs(new Result<CategoryResponseEntity>() {
+                    @Override
+                    public void onSuccess(CategoryResponseEntity result) {
+                        setBeaconList(beaconList, sub, access_token);
+                    }
+
+                    @Override
+                    public void onError(ErrorEntity errorEntity) {
+                        if (mBeaconEvents != null) {
+                            errorEntity = new ErrorEntity();
+                            errorEntity.setStatus(417);
+                            errorEntity.setSuccess(false);
+                            errorEntity.setMessage("No Base URL");
+                            mBeaconEvents.onError(errorEntity);
+                        }
+                    }
+                });
             }
+
         } else {
             if (mBeaconEvents != null) {
-                ErrorEntity errorEntity = new ErrorEntity();
+                errorEntity = new ErrorEntity();
                 errorEntity.setStatus(417);
                 errorEntity.setSuccess(false);
                 errorEntity.setMessage("No Base URL");
@@ -156,12 +172,22 @@ public class BeaconSDK {
 
     }
 
-    private void setUpConsumer(final List<CategoryResponse> beaconList) {
+    private void setBeaconList(List<CategoryResponse> beaconList, String sub, String access_token) {
+        if (beaconManager != null && beaconManager.isBound(beaconConsumer)) {
+            addMonitoringNotifier(beaconList, sub, access_token);
+            Timber.d(TAG, "startBeaconMonitoring: is bound");
+        } else {
+            Timber.d(TAG, "startBeaconMonitoring: not bound");
+            setUpConsumer(beaconList, sub, access_token);
+        }
+    }
+
+    private void setUpConsumer(final List<CategoryResponse> beaconList, final String sub, final String access_token) {
         beaconConsumer = new BeaconConsumer() {
 
             @Override
             public void onBeaconServiceConnect() {
-                addMonitoringNotifier(beaconList);
+                addMonitoringNotifier(beaconList, sub, access_token);
             }
 
             @Override
@@ -198,7 +224,7 @@ public class BeaconSDK {
     }
 
 
-    private void addMonitoringNotifier(List<CategoryResponse> beaconList) {
+    private void addMonitoringNotifier(List<CategoryResponse> beaconList, final String sub, final String access_token) {
         try {
             beaconManager.addMonitorNotifier(new MonitorNotifier() {
                 @Override
@@ -232,8 +258,8 @@ public class BeaconSDK {
                             mBeaconEvents.didBeaconsInRange(setBeacon(firstBeacon, null));
                             String android_id = Settings.Secure.getString(mContext.getContentResolver(),
                                     Settings.Secure.ANDROID_ID);
-                            BeaconEmitRequest beaconEmitRequest = setUpRequestEntity(firstBeacon, android_id);
-                            serviceModel.updateBeacon(beaconEmitRequest, SDKEntity.SDKEntityInstance.getBaseUrl());
+                            BeaconEmitRequest beaconEmitRequest = setUpRequestEntity(firstBeacon, android_id, sub);
+                            serviceModel.updateBeacon(access_token, beaconEmitRequest, SDKEntity.SDKEntityInstance.getBaseUrl());
                         }
                     }
                 }
@@ -263,9 +289,10 @@ public class BeaconSDK {
     }
 
     @NonNull
-    private BeaconEmitRequest setUpRequestEntity(Beacon firstBeacon, String android_id) {
+    private BeaconEmitRequest setUpRequestEntity(Beacon firstBeacon, String android_id, String sub) {
         BeaconEmitRequest beaconEmitRequest = new BeaconEmitRequest();
         beaconEmitRequest.setDeviceId(android_id);
+        beaconEmitRequest.setSub(sub);
         beaconEmitRequest.setDistance(String.valueOf(firstBeacon.getDistance()));
         Geo geo = new Geo();
         geo.setLatitude(sharedPref.getLat());
