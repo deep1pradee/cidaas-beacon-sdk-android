@@ -3,6 +3,8 @@ package cidaasbeaconsdk.Service;
 import cidaasbeaconsdk.Entity.BeaconEmitRequest;
 import cidaasbeaconsdk.Entity.CategoryResponseEntity;
 import cidaasbeaconsdk.Entity.LocationRequest;
+import cidaasbeaconsdk.Entity.ProximityListReponse;
+import cidaasbeaconsdk.Entity.ProximityListRequest;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
@@ -23,7 +25,11 @@ public interface IService {
                                     @Header("Content-Type") String content_type,
                                     @Header("access_token") String acess_token,
                                     @Body LocationRequest request);
-
+    @POST
+    Call<ProximityListReponse> getProximitylist(@Url String url,
+                                                @Header("Content-Type") String content_type,
+                                                @Header("access_token") String acess_token,
+                                                @Body ProximityListRequest request);
     @GET
     Call<CategoryResponseEntity> getDefaultConfig(@Url String url);
 }

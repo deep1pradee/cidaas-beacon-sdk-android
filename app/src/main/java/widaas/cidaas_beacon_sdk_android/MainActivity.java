@@ -137,7 +137,7 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
     @Override
     public void didBeaconsInRange(BeaconResult beacon) {
         //  txtview.setText("didBeaconsInRange");
-       // Log.d("MainActivity ", "didBeaconsInRange: " + beacon.getUuid() + " major " + beacon.getMajor() + " minor " + beacon.getMinor() + " distance " + beacon.getDistance());
+        Log.d("MainActivity ", "didBeaconsInRange: " + beacon.getUuid() + " major " + beacon.getMajor() + " minor " + beacon.getMinor() + " distance " + beacon.getDistance());
         // beaconMonitor.startBeaconMonitoring(beacon);
         //  Toast.makeText(this, " didBeaconsInRange ", Toast.LENGTH_SHORT).show();
     }
@@ -152,8 +152,8 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
     @Override
     public void onError(ErrorEntity errorEntity) {
         //txtview.setText(errorEntity.getMessage());
-        Log.d("MAinActivity", "onError: ");
-        Toast.makeText(this, "errorEntity " + errorEntity.getMessage(), Toast.LENGTH_SHORT).show();
+        Log.d("MAinActivity", "onError: "+errorEntity.getMessage());
+       // Toast.makeText(this, "errorEntity " + errorEntity.getMessage(), Toast.LENGTH_SHORT).show();
     }
 
     @Override

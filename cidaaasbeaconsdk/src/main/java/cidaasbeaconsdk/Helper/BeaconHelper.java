@@ -51,5 +51,6 @@ public class BeaconHelper {
     public static final String LOCATION_EMIT_SERVICE = "/access-control-srv/notification/locationchange";
     public static final String DEFAULT_CONFIG_SERVICE = "/access-control-srv/devices/beacons/configs";
     public static final String CONTENT_TYPE_JSON = "application/json";
+    public static final String LOCATION_LIST_SERVICE = "/access-control-srv/location/list";
 
 }

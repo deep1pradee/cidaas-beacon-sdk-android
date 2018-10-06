@@ -4,7 +4,10 @@ package cidaasbeaconsdk.Service;
 import cidaasbeaconsdk.Entity.BeaconEmitRequest;
 import cidaasbeaconsdk.Entity.CategoryResponseEntity;
 import cidaasbeaconsdk.Entity.ErrorEntity;
+import cidaasbeaconsdk.Entity.LOcationCordinates;
 import cidaasbeaconsdk.Entity.LocationRequest;
+import cidaasbeaconsdk.Entity.ProximityListReponse;
+import cidaasbeaconsdk.Entity.ProximityListRequest;
 import cidaasbeaconsdk.Entity.Result;
 import cidaasbeaconsdk.Helper.BeaconHelper;
 import cidaasbeaconsdk.SDKEntity;
@@ -17,6 +20,7 @@ import timber.log.Timber;
 import static cidaasbeaconsdk.Helper.BeaconHelper.BEACON_EMIT_SERVICE;
 import static cidaasbeaconsdk.Helper.BeaconHelper.CONTENT_TYPE_JSON;
 import static cidaasbeaconsdk.Helper.BeaconHelper.LOCATION_EMIT_SERVICE;
+import static cidaasbeaconsdk.Helper.BeaconHelper.LOCATION_LIST_SERVICE;
 
 public class ServiceModelImpl implements ServiceModel {
     @Override
@@ -88,7 +92,7 @@ public class ServiceModelImpl implements ServiceModel {
     public void updateLocation(String access_token, LocationRequest deviceLocation, String url) {
         Services services = new Services();
         IService iService = services.createClient(url);
-        iService.locationEmit(url + LOCATION_EMIT_SERVICE, CONTENT_TYPE_JSON, access_token,deviceLocation)
+        iService.locationEmit(url + LOCATION_EMIT_SERVICE, CONTENT_TYPE_JSON, access_token, deviceLocation)
                 .enqueue(new Callback<ResponseBody>() {
                              @Override
                              public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
@@ -102,6 +106,34 @@ public class ServiceModelImpl implements ServiceModel {
                              }
                          }
                 );
+    }
+
+    @Override
+    public void getProximityList(String access_token, ProximityListRequest proximityListRequest, String url, final Result<LOcationCordinates> responseEntityResult) {
+        Services services = new Services();
+        IService iService = services.createClient(url);
+        iService.getProximitylist(url + LOCATION_LIST_SERVICE, CONTENT_TYPE_JSON, access_token, proximityListRequest)
+                .enqueue(new Callback<ProximityListReponse>() {
+                    @Override
+                    public void onResponse(Call<ProximityListReponse> call, Response<ProximityListReponse> response) {
+                        if (response.isSuccessful()) {
+                            Timber.d(response.isSuccessful() + " REsponse");
+                            if (response.body() != null && response.body().getData() != null)
+                                responseEntityResult.onSuccess(response.body().getData());
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<ProximityListReponse> call, Throwable t) {
+                        ErrorEntity errorEntity = new ErrorEntity();
+                        errorEntity.setStatus(500);
+                        errorEntity.setSuccess(false);
+                        errorEntity.setMessage("");
+                        responseEntityResult.onError(errorEntity);
+                    }
+                });
+
+
     }
 
 }

@@ -1,11 +1,16 @@
 package cidaasbeaconsdk;
 
 import android.app.PendingIntent;
+import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.location.Location;
+import android.location.LocationManager;
+import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
@@ -33,6 +38,7 @@ import org.altbeacon.beacon.service.RangedBeacon;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import cidaasbeaconsdk.Entity.BeaconEmitRequest;
@@ -42,7 +48,9 @@ import cidaasbeaconsdk.Entity.CategoryResponseEntity;
 import cidaasbeaconsdk.Entity.DeviceLocation;
 import cidaasbeaconsdk.Entity.ErrorEntity;
 import cidaasbeaconsdk.Entity.Geo;
+import cidaasbeaconsdk.Entity.LOcationCordinates;
 import cidaasbeaconsdk.Entity.Proximity;
+import cidaasbeaconsdk.Entity.ProximityListRequest;
 import cidaasbeaconsdk.Entity.RegionCallBack;
 import cidaasbeaconsdk.Entity.Result;
 import cidaasbeaconsdk.Helper.BeaconHelper;
@@ -50,6 +58,8 @@ import cidaasbeaconsdk.Helper.SharedPref;
 import cidaasbeaconsdk.Service.GeofenceTransitionsIntentService;
 import cidaasbeaconsdk.Service.ServiceModel;
 import cidaasbeaconsdk.Service.ServiceModelImpl;
+import i.widaas.cidaaasbeaconsdk.BuildConfig;
+import okhttp3.Request;
 import timber.log.Timber;
 
 import static cidaasbeaconsdk.Helper.SharedPref.getSharedPrefInstance;
@@ -67,12 +77,12 @@ public class BeaconSDK {
     private AssetManager assetManager;
     private String configurationFileName;
     SharedPref sharedPref;
-    static RegionCallBack regionCallBack;
+    com.google.android.gms.location.LocationListener locationListener;
     /*12.919471096259466, */
     //   double currentLatitude = 12.919564999999999, currentLongitude = 77.6683352;
-    double currentLatitude = 12.919592, currentLongitude = 77.668214;
-    double defaultLat = 12.919592, defaultLon = 77.668214;
-    //double defaultLat = 12.9076338, defaultLon =  77.562011;
+    double currentLatitude = 0, currentLongitude = 0;
+    // double defaultLat = 12.919592, defaultLon = 77.668214;
+    //  double defaultLat = 12.9075669, defaultLon = 77.5618457;
     //   double currentLatitude = 12.919523752209402, currentLongitude = 77.6682609109338;
     LocationRequest mLocationRequest;
     private GoogleApiClient mGoogleApiClient;
@@ -96,26 +106,83 @@ public class BeaconSDK {
     }
 
     private BeaconSDK(Context context) {
-        mContext = context;
-        beaconHelper = new BeaconHelper();
-        beaconManager = org.altbeacon.beacon.BeaconManager.getInstanceForApplication(mContext);
-        beaconManager.getBeaconParsers().add(new BeaconParser()
-                .setBeaconLayout("m:2-3=beac,i:4-19,i:20-21,i:22-23,p:24-24,d:25-25"));
-        serviceModel = new ServiceModelImpl();
-        sharedPref = getSharedPrefInstance(mContext);
+        ErrorEntity errorEntity;
+        if(context!=null){
+            mContext = context;
+            beaconHelper = new BeaconHelper();
+            beaconManager = org.altbeacon.beacon.BeaconManager.getInstanceForApplication(mContext);
+            beaconManager.getBeaconParsers().add(new BeaconParser()
+                    .setBeaconLayout("m:2-3=beac,i:4-19,i:20-21,i:22-23,p:24-24,d:25-25"));
+            serviceModel = new ServiceModelImpl();
+            sharedPref = getSharedPrefInstance(mContext);
+            GeofenceTransitionsIntentService.regionCallBack = new RegionCallBack() {
+                @Override
+                public void OnEntered(String[] triggeringIds) {
+                    for (int i = 0; i < triggeringIds.length; i++) {
+                        sharedPref.setLocationIds(triggeringIds[i]);
+                    }
+                    StartLocEmitService("STARTED");
+                    Log.d(TAG, "OnEntered: " + triggeringIds.length);
+                }
+
+                @Override
+                public void OnExited() {
+                    StartLocEmitService("ENDED");
+                    if (mGoogleApiClient != null && mLocationRequest != null && locationListener != null)
+                        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, locationListener);
+                    Log.d(TAG, "OnExited: ");
+                }
+            };
+        }else
+        {
+            if (mBeaconEvents != null) {
+                errorEntity = new ErrorEntity();
+                errorEntity.setStatus(417);
+                errorEntity.setSuccess(false);
+                errorEntity.setMessage("Please make sure you enabled your Internet / GPS / Bluetooth");
+                mBeaconEvents.onError(errorEntity);
+            }
+        }
 
 
     }
 
-    private void setUpLocationUpdates() {
+    private boolean isGPSON() {
+        final LocationManager manager = (LocationManager) mContext.getSystemService(Context.LOCATION_SERVICE);
+        if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            return false;
+        } else
+            return true;
+    }
+
+    private boolean isBTOn() {
+        BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (mBluetoothAdapter == null) {
+            // Device does not support Bluetooth
+            return false;
+        } else {
+            if (!mBluetoothAdapter.isEnabled()) {
+                // Bluetooth is not enable :)
+                return false;
+            } else return true;
+        }
+    }
+
+    private boolean isNetworkConnected() {
+        ConnectivityManager cm = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        return cm.getActiveNetworkInfo() != null;
+    }
+
+    private void setUpLocationUpdates(LOcationCordinates data) {
         mGeofenceList = new ArrayList<Geofence>();
 
         int resp = GooglePlayServicesUtil.isGooglePlayServicesAvailable(mContext);
         if (resp == ConnectionResult.SUCCESS) {
 
             initGoogleAPIClient();
-
-            createGeofences(defaultLat, defaultLon);
+            if (data != null)
+                createGeofences(data);
 
         } else {
             Log.e(TAG, "Your Device doesn't support Google Play Services.");
@@ -124,10 +191,29 @@ public class BeaconSDK {
         // Create the LocationRequest object
         mLocationRequest = LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-                .setInterval(1 * 1000)        // 10 seconds, in milliseconds
-                .setFastestInterval(1 * 1000); // 1 second, in milliseconds
+                .setInterval(2000)        // 10 seconds, in milliseconds
+                .setFastestInterval(1000); // 1 second, in milliseconds
     }
 
+    public static String getAppLabel(Context context) {
+        PackageManager packageManager = context.getPackageManager();
+        ApplicationInfo applicationInfo = null;
+        try {
+            applicationInfo = packageManager.getApplicationInfo(context.getApplicationInfo().packageName, 0);
+        } catch (final PackageManager.NameNotFoundException e) {
+        }
+        return (String) (applicationInfo != null ? packageManager.getApplicationLabel(applicationInfo) : "Unknown");
+    }
+
+    public static String createCustomUserAgent(Request originalRequest) {
+        // App name can be also retrieved programmatically, but no need to do it for this sample needs
+        String ua = getAppLabel(mContext);
+        String baseUa = System.getProperty("http.agent");
+        if (baseUa != null) {
+            ua = ua + "/" + BuildConfig.VERSION_NAME + " " + baseUa;
+        }
+        return ua;
+    }
 
     // By default the AndroidBeaconLibrary will only find AltBeacons.  If you wish to make it
     // find a different type of beacon, you must specify the byte layout for that beacon's
@@ -187,45 +273,78 @@ public class BeaconSDK {
     }
 
     public void startBeaconMonitoring(final List<CategoryResponse> beaconList, final String sub, final String access_token) {
-        sharedPref.setAccessToken(access_token);
-        sharedPref.setSub(sub);
-        setUpLocationUpdates();
         ErrorEntity errorEntity;
-        if (SDKEntity.SDKEntityInstance != null && SDKEntity.SDKEntityInstance.getBaseUrl() != null &&
-                !SDKEntity.SDKEntityInstance.getBaseUrl().equals("")) {
-            if (beaconList != null && beaconList.size() != 0) {
-                setBeaconList(beaconList, sub, access_token);
-            } else {
-                getBeaconUUIDs(new Result<CategoryResponseEntity>() {
+
+        if (isBTOn() && isNetworkConnected() && isGPSON()) {
+            sharedPref.setAccessToken(access_token);
+            sharedPref.setSub(sub);
+
+            if (SDKEntity.SDKEntityInstance != null && SDKEntity.SDKEntityInstance.getBaseUrl() != null &&
+                    !SDKEntity.SDKEntityInstance.getBaseUrl().equals("")) {
+
+                serviceModel.getProximityList(access_token, getProximityReq(), SDKEntity.SDKEntityInstance.getBaseUrl(), new Result<LOcationCordinates>() {
                     @Override
-                    public void onSuccess(CategoryResponseEntity result) {
-                        setBeaconList(beaconList, sub, access_token);
+                    public void onSuccess(LOcationCordinates result) {
+                        setUpLocationUpdates(result);
                     }
 
                     @Override
                     public void onError(ErrorEntity errorEntity) {
-                        if (mBeaconEvents != null) {
-                            errorEntity = new ErrorEntity();
-                            errorEntity.setStatus(417);
-                            errorEntity.setSuccess(false);
-                            errorEntity.setMessage("No Base URL");
+                        if (mBeaconEvents != null)
                             mBeaconEvents.onError(errorEntity);
-                        }
                     }
                 });
-            }
+                if (beaconList != null && beaconList.size() != 0) {
+                    setBeaconList(beaconList, sub, access_token);
+                } else {
+                    getBeaconUUIDs(new Result<CategoryResponseEntity>() {
+                        @Override
+                        public void onSuccess(CategoryResponseEntity result) {
+                            setBeaconList(beaconList, sub, access_token);
+                        }
 
-        } else {
+                        @Override
+                        public void onError(ErrorEntity errorEntity) {
+                            if (mBeaconEvents != null) {
+                                errorEntity = new ErrorEntity();
+                                errorEntity.setStatus(417);
+                                errorEntity.setSuccess(false);
+                                errorEntity.setMessage("No Base URL");
+                                mBeaconEvents.onError(errorEntity);
+                            }
+                        }
+                    });
+                }
+
+            } else {
+                if (mBeaconEvents != null) {
+                    errorEntity = new ErrorEntity();
+                    errorEntity.setStatus(417);
+                    errorEntity.setSuccess(false);
+                    errorEntity.setMessage("No Base URL");
+                    mBeaconEvents.onError(errorEntity);
+                }
+            }
+        }else
+        {
             if (mBeaconEvents != null) {
                 errorEntity = new ErrorEntity();
                 errorEntity.setStatus(417);
                 errorEntity.setSuccess(false);
-                errorEntity.setMessage("No Base URL");
+                errorEntity.setMessage("Please make sure you enabled your Internet / GPS / Bluetooth");
                 mBeaconEvents.onError(errorEntity);
             }
         }
 
 
+
+    }
+
+    private ProximityListRequest getProximityReq() {
+        ProximityListRequest proximityListRequest = new ProximityListRequest();
+        proximityListRequest.setSkip(0);
+        proximityListRequest.setTake(100);
+        return proximityListRequest;
     }
 
     private void setBeaconList(List<CategoryResponse> beaconList, String sub, String access_token) {
@@ -268,6 +387,7 @@ public class BeaconSDK {
         beaconManager.bind(beaconConsumer);
     }
 
+
     public void setURLFile(AssetManager asset, String fileName) {
         assetManager = asset;
         configurationFileName = fileName;
@@ -286,6 +406,7 @@ public class BeaconSDK {
                 @Override
                 public void didEnterRegion(Region region) {
                     if (mBeaconEvents != null) {
+                        sharedPref.setSessionId(region.getUniqueId());
                         mBeaconEvents.didEnterRegion(setBeacon(null, region));
                     }
                 }
@@ -325,7 +446,7 @@ public class BeaconSDK {
                 if (beaconList.get(i).getUniqueId() != null && beaconList.get(i).getUniqueId().length != 0) {
                     for (int j = 0; j < beaconList.get(i).getUniqueId().length; j++) {
                         id1 = Identifier.parse(beaconList.get(i).getUniqueId()[j]);
-                        Region region = new Region(beaconList.get(i).getVendor() + j, id1, null, null);
+                        Region region = new Region(UUID.randomUUID().toString(), id1, null, null);
                         try {
                             beaconManager.startMonitoringBeaconsInRegion(region);
                             beaconManager.startRangingBeaconsInRegion(region);
@@ -391,9 +512,8 @@ public class BeaconSDK {
     }
 
 
-    public void StartService(String status) {
+    public void StartLocEmitService(String status) {
         serviceModel.updateLocation(sharedPref.getAccessToken(), getLocationRequest(currentLatitude, currentLongitude, status), SDKEntity.SDKEntityInstance.getBaseUrl());
-
     }
 
     private GoogleApiClient.ConnectionCallbacks connectionAddListener =
@@ -403,30 +523,18 @@ public class BeaconSDK {
                     Log.i(TAG, "onConnected");
 
                     Location location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-                    LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, new com.google.android.gms.location.LocationListener() {
+                    locationListener = new com.google.android.gms.location.LocationListener() {
                         @Override
                         public void onLocationChanged(Location location) {
                             currentLatitude = location.getLatitude();
                             currentLongitude = location.getLongitude();
-                            Location newLoc = new Location("loc");
-                            newLoc.setLatitude(defaultLat);
-                            newLoc.setLongitude(defaultLon);
-                            float distance = location.distanceTo(newLoc);
-                            Log.d(TAG, "onLocationChanged: " + distance);
-                            serviceModel.updateLocation(sharedPref.getAccessToken(), getLocationRequest(currentLatitude, currentLongitude, "IN_PROGRESS"), SDKEntity.SDKEntityInstance.getBaseUrl());
+                            StartLocEmitService("IN_PROGRESS");
                             Log.i(TAG, "onLocationChanged " + location.getLatitude() + " " + location.getLongitude());
                         }
-                    });
+                    };
+                    LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, locationListener);
                     if (location == null) {
-                        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, new com.google.android.gms.location.LocationListener() {
-                            @Override
-                            public void onLocationChanged(Location location) {
-                                currentLatitude = location.getLatitude();
-                                currentLongitude = location.getLongitude();
-                                serviceModel.updateLocation(sharedPref.getAccessToken(), getLocationRequest(currentLatitude, currentLongitude, "IN_PROGRESS"), SDKEntity.SDKEntityInstance.getBaseUrl());
-                                Log.i(TAG, "onLocationChanged " + location.getLatitude() + " " + location.getLongitude());
-                            }
-                        });
+                        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, locationListener);
 
                     } else {
                         //If everything went fine lets get latitude and longitude
@@ -473,8 +581,15 @@ public class BeaconSDK {
                 }
             };
 
+    /*private float getDistance(Location location) {
+        Location newLoc = new Location("loc");
+        newLoc.setLatitude(defaultLat);
+        newLoc.setLongitude(defaultLon);
+        return location.distanceTo(newLoc);
+    }*/
+
     private cidaasbeaconsdk.Entity.LocationRequest getLocationRequest(double currentLatitude, double currentLongitude, String status) {
-        String[] list = GeofenceTransitionsIntentService.getTriggeringIds();
+        Set<String> list = sharedPref.getLocationIds();
         Geo geo = new Geo();
         geo.setCoordinates(new String[]{String.valueOf(currentLongitude), String.valueOf(currentLatitude)});
         cidaasbeaconsdk.Entity.LocationRequest deviceLocation = new cidaasbeaconsdk.Entity.LocationRequest();
@@ -483,8 +598,11 @@ public class BeaconSDK {
         deviceLocation.setDeviceId(android_id);
         deviceLocation.setGeo(geo);
         deviceLocation.setStatus(status);
-        deviceLocation.setLocationIds(list);
-        deviceLocation.setSessionId(UUID.randomUUID().toString());
+        if (list != null) {
+            String[] array = new String[list.size()];
+            deviceLocation.setLocationIds(array);
+        }
+        deviceLocation.setSessionId(sharedPref.getSessionId());
         deviceLocation.setSub(sharedPref.getSub());
         return deviceLocation;
     }
@@ -500,17 +618,30 @@ public class BeaconSDK {
     /**
      * Create a Geofence list
      */
-    public void createGeofences(double latitude, double longitude) {
+    public void createGeofences(LOcationCordinates data) {
         Log.d(TAG, "createGeofences: called ");
-        String id = UUID.randomUUID().toString();
-        Geofence fence = new Geofence.Builder()
-                .setRequestId(id)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_EXIT)
-                .setCircularRegion(latitude, longitude, 20)
-                .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .build();
-        Log.d(TAG, "createGeofences: fence lat " + latitude + " lon " + longitude);
-        mGeofenceList.add(fence);
+        if (data.getData() != null) {
+            for (int i = 0; i < data.getData().length; i++) {
+                try {
+
+                    Geofence fence = new Geofence.Builder()
+                            .setRequestId(data.getData()[i].getLocationId())
+                            .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_EXIT)
+                            .setCircularRegion(Double.parseDouble(data.getData()[i].getCoordinates()[1]),
+                                    Double.parseDouble(data.getData()[i].getCoordinates()[0]), data.getData()[i].getRadius())
+                            .setExpirationDuration(Geofence.NEVER_EXPIRE)
+                            .build();
+                    Log.d(TAG, "createGeofences: fence lat " + data.getData()[i].getCoordinates()[1] + " lon " + data.getData()[i].getCoordinates()[0]);
+                    mGeofenceList.add(fence);
+
+                } catch (Exception e) {
+
+                }
+
+            }
+        }
+
+
     }
 
     private GeofencingRequest getGeofencingRequest() {

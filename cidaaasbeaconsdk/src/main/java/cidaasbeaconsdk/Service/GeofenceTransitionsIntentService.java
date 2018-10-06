@@ -7,22 +7,25 @@ import android.util.Log;
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingEvent;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import cidaasbeaconsdk.BeaconSDK;
 import cidaasbeaconsdk.Entity.ErrorEntity;
+import cidaasbeaconsdk.Entity.RegionCallBack;
 import timber.log.Timber;
 
 public class GeofenceTransitionsIntentService extends IntentService {
 
     private static final String TAG = "GeofenceTransitions";
-    public static String[] list=new String [0];
+    public static String[] list = new String[0];
+    public static RegionCallBack regionCallBack;
 
     public GeofenceTransitionsIntentService() {
         super("GeofenceTransitionsIntentService");
     }
 
-    static List<Geofence> triggeringGeofences;
+    static List<Geofence> triggeringGeofences = new ArrayList<>();
 
     @Override
     protected void onHandleIntent(Intent intent) {
@@ -43,17 +46,28 @@ public class GeofenceTransitionsIntentService extends IntentService {
         errorEntity.setSuccess(false);
         Log.i(TAG, "geofenceTransition = " + geofenceTransition + " Enter : " + Geofence.GEOFENCE_TRANSITION_ENTER + "Exit : " + Geofence.GEOFENCE_TRANSITION_EXIT);
         if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER || geofenceTransition == Geofence.GEOFENCE_TRANSITION_DWELL) {
-            Log.d(TAG, "onHandleIntent: Entered Entered the Location");
-            errorEntity.setMessage("Entered the Location");
+            Log.d(TAG, "onHandleIntent: Entered Entered the Location " + triggeringGeofences.size());
+            /*errorEntity.setMessage("Entered the Location");
             BeaconSDK.mBeaconEvents.onError(errorEntity);
-            BeaconSDK.mBeaconEvents.didEnterGeoRegion();
+            BeaconSDK.mBeaconEvents.didEnterGeoRegion();*/
+            if (regionCallBack != null) {
+                regionCallBack.OnEntered(getTriggeringIds());
+            }
+            if (triggeringGeofences != null) {
+                for (int i = 0; i < triggeringGeofences.size(); i++) {
+                    list[i] = triggeringGeofences.get(i).getRequestId();
+                }
+            }
 
         } else if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
             Log.d(TAG, "Showing Notification...");
             Timber.d("Exited", "Exited the Location");
-            errorEntity.setMessage("Exited the Location");
+           /* errorEntity.setMessage("Exited the Location");
             BeaconSDK.mBeaconEvents.onError(errorEntity);
-            BeaconSDK.mBeaconEvents.didExitGeoRegion();
+            BeaconSDK.mBeaconEvents.didExitGeoRegion();*/
+            if (regionCallBack != null) {
+                regionCallBack.OnExited();
+            }
         } else {
             Log.d(TAG, "Error: ");
             // Log the error.
@@ -65,19 +79,9 @@ public class GeofenceTransitionsIntentService extends IntentService {
     }
 
     public static String[] getTriggeringIds() {
-        try
-        {
-            if (triggeringGeofences != null) {
-                for (int i = 0; i < triggeringGeofences.size(); i++) {
-                    list[i] = triggeringGeofences.get(i).getRequestId();
-                }
-            }
-        }catch (Exception ex)
-        {
-            return list;
-        }
 
         return list;
+
     }
 
 }
