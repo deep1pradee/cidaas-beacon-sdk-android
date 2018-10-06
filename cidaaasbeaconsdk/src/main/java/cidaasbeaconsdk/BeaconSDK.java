@@ -82,7 +82,7 @@ public class BeaconSDK {
     //   double currentLatitude = 12.919564999999999, currentLongitude = 77.6683352;
     double currentLatitude = 0, currentLongitude = 0;
     // double defaultLat = 12.919592, defaultLon = 77.668214;
-    //  double defaultLat = 12.9075669, defaultLon = 77.5618457;
+      double defaultLat = 12.9075669, defaultLon = 77.5618457;
     //   double currentLatitude = 12.919523752209402, currentLongitude = 77.6682609109338;
     LocationRequest mLocationRequest;
     private GoogleApiClient mGoogleApiClient;
@@ -107,7 +107,7 @@ public class BeaconSDK {
 
     private BeaconSDK(Context context) {
         ErrorEntity errorEntity;
-        if(context!=null){
+        if (context != null) {
             mContext = context;
             beaconHelper = new BeaconHelper();
             beaconManager = org.altbeacon.beacon.BeaconManager.getInstanceForApplication(mContext);
@@ -133,8 +133,7 @@ public class BeaconSDK {
                     Log.d(TAG, "OnExited: ");
                 }
             };
-        }else
-        {
+        } else {
             if (mBeaconEvents != null) {
                 errorEntity = new ErrorEntity();
                 errorEntity.setStatus(417);
@@ -325,8 +324,7 @@ public class BeaconSDK {
                     mBeaconEvents.onError(errorEntity);
                 }
             }
-        }else
-        {
+        } else {
             if (mBeaconEvents != null) {
                 errorEntity = new ErrorEntity();
                 errorEntity.setStatus(417);
@@ -335,7 +333,6 @@ public class BeaconSDK {
                 mBeaconEvents.onError(errorEntity);
             }
         }
-
 
 
     }
@@ -454,10 +451,7 @@ public class BeaconSDK {
                             Timber.d("startMonitoringBeaconsInRegion" + ex.getMessage());
                         }
                     }
-
-
                 }
-
             }
         } catch (Exception ex) {
             Timber.d(ex.getMessage());
@@ -528,8 +522,9 @@ public class BeaconSDK {
                         public void onLocationChanged(Location location) {
                             currentLatitude = location.getLatitude();
                             currentLongitude = location.getLongitude();
+
                             StartLocEmitService("IN_PROGRESS");
-                            Log.i(TAG, "onLocationChanged " + location.getLatitude() + " " + location.getLongitude());
+                            Log.i(TAG, "onLocationChanged " + location.getLatitude() + " " + location.getLongitude()+" -" +getDistance(location));
                         }
                     };
                     LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, locationListener);
@@ -581,12 +576,12 @@ public class BeaconSDK {
                 }
             };
 
-    /*private float getDistance(Location location) {
+    private float getDistance(Location location) {
         Location newLoc = new Location("loc");
         newLoc.setLatitude(defaultLat);
         newLoc.setLongitude(defaultLon);
         return location.distanceTo(newLoc);
-    }*/
+    }
 
     private cidaasbeaconsdk.Entity.LocationRequest getLocationRequest(double currentLatitude, double currentLongitude, String status) {
         Set<String> list = sharedPref.getLocationIds();
@@ -627,8 +622,8 @@ public class BeaconSDK {
                     Geofence fence = new Geofence.Builder()
                             .setRequestId(data.getData()[i].getLocationId())
                             .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_EXIT)
-                            .setCircularRegion(Double.parseDouble(data.getData()[i].getCoordinates()[1]),
-                                    Double.parseDouble(data.getData()[i].getCoordinates()[0]), data.getData()[i].getRadius())
+                            .setCircularRegion(defaultLat,defaultLon,10/*Double.parseDouble(data.getData()[i].getCoordinates()[1]),
+                                    Double.parseDouble(data.getData()[i].getCoordinates()[0]), data.getData()[i].getRadius()*/)
                             .setExpirationDuration(Geofence.NEVER_EXPIRE)
                             .build();
                     Log.d(TAG, "createGeofences: fence lat " + data.getData()[i].getCoordinates()[1] + " lon " + data.getData()[i].getCoordinates()[0]);

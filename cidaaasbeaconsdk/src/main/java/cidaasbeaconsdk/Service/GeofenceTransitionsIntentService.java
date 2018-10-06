@@ -50,14 +50,17 @@ public class GeofenceTransitionsIntentService extends IntentService {
             /*errorEntity.setMessage("Entered the Location");
             BeaconSDK.mBeaconEvents.onError(errorEntity);
             BeaconSDK.mBeaconEvents.didEnterGeoRegion();*/
-            if (regionCallBack != null) {
-                regionCallBack.OnEntered(getTriggeringIds());
-            }
-            if (triggeringGeofences != null) {
+            if (triggeringGeofences != null && triggeringGeofences.size() > 0) {
+                list = new String[triggeringGeofences.size()];
                 for (int i = 0; i < triggeringGeofences.size(); i++) {
                     list[i] = triggeringGeofences.get(i).getRequestId();
                 }
             }
+            if (regionCallBack != null) {
+                regionCallBack.OnEntered(getTriggeringIds());
+
+            }
+
 
         } else if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
             Log.d(TAG, "Showing Notification...");
