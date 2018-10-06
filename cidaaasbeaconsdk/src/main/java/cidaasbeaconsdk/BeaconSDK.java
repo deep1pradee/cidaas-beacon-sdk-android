@@ -128,8 +128,8 @@ public class BeaconSDK {
                 @Override
                 public void OnExited() {
                     StartLocEmitService("ENDED");
-                    if (mGoogleApiClient != null && mLocationRequest != null && locationListener != null)
-                        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, locationListener);
+                    if (mGoogleApiClient != null &&  locationListener != null)
+                        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient,  locationListener);
                     Log.d(TAG, "OnExited: ");
                 }
             };
