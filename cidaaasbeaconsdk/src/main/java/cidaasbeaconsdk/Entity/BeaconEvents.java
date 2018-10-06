@@ -13,4 +13,6 @@ public interface BeaconEvents {
     void didDetermineStateForRegion(int var1, BeaconResult beacon);
 
     void onError(ErrorEntity errorEntity);
+    public void didEnterGeoRegion();
+    public void didExitGeoRegion();
 }

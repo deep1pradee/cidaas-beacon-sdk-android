@@ -1,30 +1,32 @@
-package com.coderzheaven.geofencedemo;
+package cidaasbeaconsdk.Service;
 
 import android.app.IntentService;
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.content.Context;
 import android.content.Intent;
-import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingEvent;
 
+import java.util.List;
+
+import cidaasbeaconsdk.BeaconSDK;
+import cidaasbeaconsdk.Entity.ErrorEntity;
+import timber.log.Timber;
+
 public class GeofenceTransitionsIntentService extends IntentService {
 
     private static final String TAG = "GeofenceTransitions";
+    public static String[] list=new String [0];
 
     public GeofenceTransitionsIntentService() {
         super("GeofenceTransitionsIntentService");
     }
 
+    static List<Geofence> triggeringGeofences;
+
     @Override
     protected void onHandleIntent(Intent intent) {
-
         Log.i(TAG, "onHandleIntent");
-
         GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(intent);
         if (geofencingEvent.hasError()) {
             //String errorMessage = GeofenceErrorMessages.getErrorString(this,
@@ -35,42 +37,47 @@ public class GeofenceTransitionsIntentService extends IntentService {
 
         // Get the transition type.
         int geofenceTransition = geofencingEvent.getGeofenceTransition();
-
+        triggeringGeofences = geofencingEvent.getTriggeringGeofences();
+        ErrorEntity errorEntity = new ErrorEntity();
+        errorEntity.setStatus(417);
+        errorEntity.setSuccess(false);
         Log.i(TAG, "geofenceTransition = " + geofenceTransition + " Enter : " + Geofence.GEOFENCE_TRANSITION_ENTER + "Exit : " + Geofence.GEOFENCE_TRANSITION_EXIT);
-        if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER || geofenceTransition == Geofence.GEOFENCE_TRANSITION_DWELL){
-            showNotification("Entered", "Entered the Location");
-        }
-        else if(geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
-            Log.i(TAG, "Showing Notification...");
-            showNotification("Exited", "Exited the Location");
+        if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER || geofenceTransition == Geofence.GEOFENCE_TRANSITION_DWELL) {
+            Log.d(TAG, "onHandleIntent: Entered Entered the Location");
+            errorEntity.setMessage("Entered the Location");
+            BeaconSDK.mBeaconEvents.onError(errorEntity);
+            BeaconSDK.mBeaconEvents.didEnterGeoRegion();
+
+        } else if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
+            Log.d(TAG, "Showing Notification...");
+            Timber.d("Exited", "Exited the Location");
+            errorEntity.setMessage("Exited the Location");
+            BeaconSDK.mBeaconEvents.onError(errorEntity);
+            BeaconSDK.mBeaconEvents.didExitGeoRegion();
         } else {
+            Log.d(TAG, "Error: ");
             // Log the error.
-            showNotification("Error", "Error");
+            errorEntity.setMessage("Error");
+            BeaconSDK.mBeaconEvents.onError(errorEntity);
+            Timber.d("Error", "Error");
             Log.e(TAG, "Error ");
         }
     }
 
-    public void showNotification(String text, String bigText) {
+    public static String[] getTriggeringIds() {
+        try
+        {
+            if (triggeringGeofences != null) {
+                for (int i = 0; i < triggeringGeofences.size(); i++) {
+                    list[i] = triggeringGeofences.get(i).getRequestId();
+                }
+            }
+        }catch (Exception ex)
+        {
+            return list;
+        }
 
-        // 1. Create a NotificationManager
-        NotificationManager notificationManager =
-                (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
-
-        // 2. Create a PendingIntent for AllGeofencesActivity
-        Intent intent = new Intent(this, MainActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pendingNotificationIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-        // 3. Create and send a notification
-        Notification notification = new NotificationCompat.Builder(this)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("Title")
-                .setContentText(text)
-                .setContentIntent(pendingNotificationIntent)
-                .setStyle(new NotificationCompat.BigTextStyle().bigText(bigText))
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setAutoCancel(true)
-                .build();
-        notificationManager.notify(0, notification);
+        return list;
     }
+
 }

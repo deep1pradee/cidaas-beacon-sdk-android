@@ -4,6 +4,7 @@ package cidaasbeaconsdk.Service;
 import cidaasbeaconsdk.Entity.BeaconEmitRequest;
 import cidaasbeaconsdk.Entity.CategoryResponseEntity;
 import cidaasbeaconsdk.Entity.ErrorEntity;
+import cidaasbeaconsdk.Entity.LocationRequest;
 import cidaasbeaconsdk.Entity.Result;
 import cidaasbeaconsdk.Helper.BeaconHelper;
 import cidaasbeaconsdk.SDKEntity;
@@ -15,6 +16,7 @@ import timber.log.Timber;
 
 import static cidaasbeaconsdk.Helper.BeaconHelper.BEACON_EMIT_SERVICE;
 import static cidaasbeaconsdk.Helper.BeaconHelper.CONTENT_TYPE_JSON;
+import static cidaasbeaconsdk.Helper.BeaconHelper.LOCATION_EMIT_SERVICE;
 
 public class ServiceModelImpl implements ServiceModel {
     @Override
@@ -49,11 +51,11 @@ public class ServiceModelImpl implements ServiceModel {
     }
 
     @Override
-    public void updateBeacon(String access_token,BeaconEmitRequest beacon, String url) {
+    public void updateBeacon(String access_token, BeaconEmitRequest beacon, String url) {
 
         Services services = new Services();
         IService iService = services.createClient(url);
-        iService.beaconEmit(url + BEACON_EMIT_SERVICE, CONTENT_TYPE_JSON,access_token, beacon).enqueue(new Callback<ResponseBody>() {
+        iService.beaconEmit(url + BEACON_EMIT_SERVICE, CONTENT_TYPE_JSON, access_token, beacon).enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 if (response.isSuccessful()) {
@@ -81,82 +83,25 @@ public class ServiceModelImpl implements ServiceModel {
             }
         });
     }
-   /* @Override
-    public Observable<ResponseBody> updateBeacon(final BeaconEmitRequest beaconEmitRequest, final String url) {
-        Callable<ResponseBody> callable = new Callable<ResponseBody>() {
-            @Override
-            public ResponseBody call() throws Exception {
-
-                return null;
-            }
-        };
-        return makeObservable(callable).subscribeOn(Schedulers.computation());
-    }
 
     @Override
-    public Observable<ResponseBody> updateLocation(final DeviceLocation locationEmitRequest, final String url) {
-        Callable<ResponseBody> callable = new Callable<ResponseBody>() {
-            @Override
-            public ResponseBody call() throws Exception {
-                Services services = new Services();
-                IService iService = services.createClient(url);
-                iService.locationEmit(url + LOCATION_EMIT_SERVICE, CONTENT_TYPE_JSON, locationEmitRequest).enqueue(new Callback<ResponseBody>() {
-                    @Override
-                    public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+    public void updateLocation(String access_token, LocationRequest deviceLocation, String url) {
+        Services services = new Services();
+        IService iService = services.createClient(url);
+        iService.locationEmit(url + LOCATION_EMIT_SERVICE, CONTENT_TYPE_JSON, access_token,deviceLocation)
+                .enqueue(new Callback<ResponseBody>() {
+                             @Override
+                             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                                 if (response.isSuccessful())
+                                     Timber.d(response.isSuccessful() + " REsponse");
+                             }
 
-                    }
-
-                    @Override
-                    public void onFailure(Call<ResponseBody> call, Throwable t) {
-
-                    }
-                });
-                return null;
-            }
-        };
-        return makeObservable(callable).subscribeOn(Schedulers.computation());
+                             @Override
+                             public void onFailure(Call<ResponseBody> call, Throwable t) {
+                                 Timber.d(t.getMessage() + " REsponse");
+                             }
+                         }
+                );
     }
 
-    @Override
-    public Observable<CategoryResponseEntity> getDefaultConfig(final String url, final Result<CategoryResponseEntity> result) {
-       *//* final Callable<CategoryResponseEntity> callable = new Callable<CategoryResponseEntity>() {
-            @Override
-            public CategoryResponseEntity call() throws Exception {*//*
-                Services services = new Services();
-                IService iService = services.createClient(url);
-                iService.getDefaultConfig(url+DEFAULT_CONFIG_SERVICE).enqueue(new Callback<CategoryResponseEntity>() {
-                    @Override
-                    public void onResponse(Call<CategoryResponseEntity> call, Response<CategoryResponseEntity> response) {
-                        if (response.isSuccessful()) {
-                            result.onSuccess(response.body());
-                        }
-                        else
-                        {
-                            ErrorEntity errorEntity = new ErrorEntity();
-                            errorEntity.setStatus(response.code());
-                            errorEntity.setSuccess(false);
-                            errorEntity.setMessage(response.errorBody().byteStream().toString());
-                            result.onError(errorEntity);
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Call<CategoryResponseEntity> call, Throwable t) {
-                        ErrorEntity errorEntity = new ErrorEntity();
-                        errorEntity.setStatus(500);
-                        errorEntity.setSuccess(false);
-                        errorEntity.setMessage(t.getMessage());
-                        result.onError(errorEntity);
-                    }
-                });
-                return null;
-           *//* }
-        };
-        return makeObservable(callable).subscribeOn(Schedulers.computation());*//*
-    }
-
-    @Override
-    public Observable<CategoryResponseEntity> getDefaultConfig(String url) {
-        return null;
-    }*/
 }

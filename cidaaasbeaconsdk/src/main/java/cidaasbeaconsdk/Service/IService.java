@@ -2,7 +2,7 @@ package cidaasbeaconsdk.Service;
 
 import cidaasbeaconsdk.Entity.BeaconEmitRequest;
 import cidaasbeaconsdk.Entity.CategoryResponseEntity;
-import cidaasbeaconsdk.Entity.DeviceLocation;
+import cidaasbeaconsdk.Entity.LocationRequest;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
@@ -17,10 +17,13 @@ public interface IService {
                                   @Header("Content-Type") String content_type,
                                   @Header("access_token") String acess_token,
                                   @Body BeaconEmitRequest request);
+
     @POST
     Call<ResponseBody> locationEmit(@Url String url,
-                                  @Header("Content-Type") String content_type,
-                                  @Body DeviceLocation request);
+                                    @Header("Content-Type") String content_type,
+                                    @Header("access_token") String acess_token,
+                                    @Body LocationRequest request);
+
     @GET
     Call<CategoryResponseEntity> getDefaultConfig(@Url String url);
 }

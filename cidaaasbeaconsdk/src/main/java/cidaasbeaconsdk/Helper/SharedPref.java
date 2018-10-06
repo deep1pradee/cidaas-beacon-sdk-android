@@ -11,8 +11,10 @@ public class SharedPref {
     //Application context
     Context context;
     private static final String PREFS_NAME = "cidaasPrefsFile";
-    private static final String KEY_LAT = "";
-    private static final String KEY_LON = "";
+    private static final String KEY_LAT = "lat";
+    private static final String KEY_LON = "lon";
+    private static final String KEY_ACCESS_TOKEN = "access_token";
+    private static final String KEY_USER_SUB = "sub";
 
     static SharedPref sharedPref;
 
@@ -29,8 +31,12 @@ public class SharedPref {
         return sharedPref;
     }
 
-    public void setLatLon(String lat, String lon) {
+    public void setLat(String lat) {
         editor.putString(KEY_LAT, lat);
+        editor.apply();
+    }
+
+    public void setLon( String lon) {
         editor.putString(KEY_LON, lon);
         editor.apply();
     }
@@ -43,4 +49,21 @@ public class SharedPref {
         return preferences.getString(KEY_LON, "");
     }
 
+    public void setSub( String sub) {
+        editor.putString(KEY_USER_SUB, sub);
+        editor.apply();
+
+    }
+    public void setAccessToken(String access_token) {
+        editor.putString(KEY_ACCESS_TOKEN, access_token);
+        editor.apply();
+    }
+
+    public String getSub() {
+        return preferences.getString(KEY_USER_SUB, "");
+    }
+    public String getAccessToken()
+    {
+        return preferences.getString(KEY_ACCESS_TOKEN,"" );
+    }
 }

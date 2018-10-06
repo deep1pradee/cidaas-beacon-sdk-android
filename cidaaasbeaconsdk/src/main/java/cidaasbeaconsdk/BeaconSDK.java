@@ -1,11 +1,25 @@
 package cidaasbeaconsdk;
 
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.res.AssetManager;
+import android.location.Location;
+import android.os.Bundle;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
+import android.util.Log;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesUtil;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.location.Geofence;
+import com.google.android.gms.location.GeofencingRequest;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
@@ -16,8 +30,10 @@ import org.altbeacon.beacon.RangeNotifier;
 import org.altbeacon.beacon.Region;
 import org.altbeacon.beacon.service.RangedBeacon;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 import cidaasbeaconsdk.Entity.BeaconEmitRequest;
 import cidaasbeaconsdk.Entity.BeaconEvents;
@@ -27,9 +43,11 @@ import cidaasbeaconsdk.Entity.DeviceLocation;
 import cidaasbeaconsdk.Entity.ErrorEntity;
 import cidaasbeaconsdk.Entity.Geo;
 import cidaasbeaconsdk.Entity.Proximity;
+import cidaasbeaconsdk.Entity.RegionCallBack;
 import cidaasbeaconsdk.Entity.Result;
 import cidaasbeaconsdk.Helper.BeaconHelper;
 import cidaasbeaconsdk.Helper.SharedPref;
+import cidaasbeaconsdk.Service.GeofenceTransitionsIntentService;
 import cidaasbeaconsdk.Service.ServiceModel;
 import cidaasbeaconsdk.Service.ServiceModelImpl;
 import timber.log.Timber;
@@ -40,21 +58,34 @@ import static cidaasbeaconsdk.Helper.SharedPref.getSharedPrefInstance;
 public class BeaconSDK {
     static Context mContext;
     static BeaconHelper beaconHelper;
+    private ArrayList<Geofence> mGeofenceList;
     String TAG = "main";
-    static BeaconEvents mBeaconEvents;
+    public static BeaconEvents mBeaconEvents;
     org.altbeacon.beacon.BeaconManager beaconManager;
     static BeaconConsumer beaconConsumer;
     static Intent serviceIntent;
     private AssetManager assetManager;
     private String configurationFileName;
     SharedPref sharedPref;
+    static RegionCallBack regionCallBack;
+    /*12.919471096259466, */
+    //   double currentLatitude = 12.919564999999999, currentLongitude = 77.6683352;
+    double currentLatitude = 12.919592, currentLongitude = 77.668214;
+    double defaultLat = 12.919592, defaultLon = 77.668214;
+    //double defaultLat = 12.9076338, defaultLon =  77.562011;
+    //   double currentLatitude = 12.919523752209402, currentLongitude = 77.6682609109338;
+    LocationRequest mLocationRequest;
+    private GoogleApiClient mGoogleApiClient;
+    private PendingIntent mGeofencePendingIntent;
+    Intent intent;
+
 
     public void registerEvents(BeaconEvents beaconEvents) {
         mBeaconEvents = beaconEvents;
     }
 
     static BeaconSDK manager;
-    ServiceModel serviceModel;
+    static ServiceModel serviceModel;
 
     public static BeaconSDK getInstance(Context context) {
 
@@ -73,6 +104,28 @@ public class BeaconSDK {
         serviceModel = new ServiceModelImpl();
         sharedPref = getSharedPrefInstance(mContext);
 
+
+    }
+
+    private void setUpLocationUpdates() {
+        mGeofenceList = new ArrayList<Geofence>();
+
+        int resp = GooglePlayServicesUtil.isGooglePlayServicesAvailable(mContext);
+        if (resp == ConnectionResult.SUCCESS) {
+
+            initGoogleAPIClient();
+
+            createGeofences(defaultLat, defaultLon);
+
+        } else {
+            Log.e(TAG, "Your Device doesn't support Google Play Services.");
+        }
+
+        // Create the LocationRequest object
+        mLocationRequest = LocationRequest.create()
+                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+                .setInterval(1 * 1000)        // 10 seconds, in milliseconds
+                .setFastestInterval(1 * 1000); // 1 second, in milliseconds
     }
 
 
@@ -134,6 +187,9 @@ public class BeaconSDK {
     }
 
     public void startBeaconMonitoring(final List<CategoryResponse> beaconList, final String sub, final String access_token) {
+        sharedPref.setAccessToken(access_token);
+        sharedPref.setSub(sub);
+        setUpLocationUpdates();
         ErrorEntity errorEntity;
         if (SDKEntity.SDKEntityInstance != null && SDKEntity.SDKEntityInstance.getBaseUrl() != null &&
                 !SDKEntity.SDKEntityInstance.getBaseUrl().equals("")) {
@@ -295,11 +351,10 @@ public class BeaconSDK {
         beaconEmitRequest.setSub(sub);
         beaconEmitRequest.setDistance(String.valueOf(firstBeacon.getDistance()));
         Geo geo = new Geo();
-        geo.setLatitude(sharedPref.getLat());
-        geo.setLongitude(sharedPref.getLon());
+        geo.setCoordinates(new String[]{String.valueOf(currentLongitude), String.valueOf(currentLatitude)});
         beaconEmitRequest.setGeo(geo);
         DeviceLocation deviceLocation = new DeviceLocation();
-        deviceLocation.setGeo(geo);
+        // deviceLocation.setGeo(geo);
         deviceLocation.setMajor(firstBeacon.getId2().toString());
         deviceLocation.setMinor(firstBeacon.getId3().toString());
         deviceLocation.setUniqueId(firstBeacon.getId1().toString());
@@ -323,6 +378,160 @@ public class BeaconSDK {
         }
 
 
+    }
+
+
+    public void initGoogleAPIClient() {
+        mGoogleApiClient = new GoogleApiClient.Builder(mContext)
+                .addApi(LocationServices.API)
+                .addConnectionCallbacks(connectionAddListener)
+                .addOnConnectionFailedListener(connectionFailedListener)
+                .build();
+        mGoogleApiClient.connect();
+    }
+
+
+    public void StartService(String status) {
+        serviceModel.updateLocation(sharedPref.getAccessToken(), getLocationRequest(currentLatitude, currentLongitude, status), SDKEntity.SDKEntityInstance.getBaseUrl());
+
+    }
+
+    private GoogleApiClient.ConnectionCallbacks connectionAddListener =
+            new GoogleApiClient.ConnectionCallbacks() {
+                @Override
+                public void onConnected(Bundle bundle) {
+                    Log.i(TAG, "onConnected");
+
+                    Location location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+                    LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, new com.google.android.gms.location.LocationListener() {
+                        @Override
+                        public void onLocationChanged(Location location) {
+                            currentLatitude = location.getLatitude();
+                            currentLongitude = location.getLongitude();
+                            Location newLoc = new Location("loc");
+                            newLoc.setLatitude(defaultLat);
+                            newLoc.setLongitude(defaultLon);
+                            float distance = location.distanceTo(newLoc);
+                            Log.d(TAG, "onLocationChanged: " + distance);
+                            serviceModel.updateLocation(sharedPref.getAccessToken(), getLocationRequest(currentLatitude, currentLongitude, "IN_PROGRESS"), SDKEntity.SDKEntityInstance.getBaseUrl());
+                            Log.i(TAG, "onLocationChanged " + location.getLatitude() + " " + location.getLongitude());
+                        }
+                    });
+                    if (location == null) {
+                        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, new com.google.android.gms.location.LocationListener() {
+                            @Override
+                            public void onLocationChanged(Location location) {
+                                currentLatitude = location.getLatitude();
+                                currentLongitude = location.getLongitude();
+                                serviceModel.updateLocation(sharedPref.getAccessToken(), getLocationRequest(currentLatitude, currentLongitude, "IN_PROGRESS"), SDKEntity.SDKEntityInstance.getBaseUrl());
+                                Log.i(TAG, "onLocationChanged " + location.getLatitude() + " " + location.getLongitude());
+                            }
+                        });
+
+                    } else {
+                        //If everything went fine lets get latitude and longitude
+                        currentLatitude = location.getLatitude();
+                        currentLongitude = location.getLongitude();
+                        Log.i(TAG, currentLatitude + " WORKS " + currentLongitude);
+
+                        //createGeofences(currentLatitude, currentLongitude);
+                        //registerGeofences(mGeofenceList);
+                    }
+                    sharedPref.setLat(String.valueOf(currentLatitude));
+                    sharedPref.setLon(String.valueOf(currentLongitude));
+                    Timber.d("lat " + currentLatitude + " lon " + currentLongitude);
+                    try {
+                        LocationServices.GeofencingApi.addGeofences(
+                                mGoogleApiClient,
+                                getGeofencingRequest(),
+                                getGeofencePendingIntent()
+                        ).setResultCallback(new ResultCallback<Status>() {
+
+                            @Override
+                            public void onResult(Status status) {
+                                if (status.isSuccess()) {
+                                    Log.i(TAG, "Saving Geofence");
+
+                                } else {
+                                    Log.e(TAG, "Registering geofence failed: " + status.getStatusMessage() +
+                                            " : " + status.getStatusCode());
+                                }
+                            }
+                        });
+
+                    } catch (SecurityException securityException) {
+                        // Catch exception generated if the app does not use ACCESS_FINE_LOCATION permission.
+                        Log.e(TAG, "Error");
+                    }
+                }
+
+                @Override
+                public void onConnectionSuspended(int i) {
+
+                    Log.e(TAG, "onConnectionSuspended");
+
+                }
+            };
+
+    private cidaasbeaconsdk.Entity.LocationRequest getLocationRequest(double currentLatitude, double currentLongitude, String status) {
+        String[] list = GeofenceTransitionsIntentService.getTriggeringIds();
+        Geo geo = new Geo();
+        geo.setCoordinates(new String[]{String.valueOf(currentLongitude), String.valueOf(currentLatitude)});
+        cidaasbeaconsdk.Entity.LocationRequest deviceLocation = new cidaasbeaconsdk.Entity.LocationRequest();
+        String android_id = Settings.Secure.getString(mContext.getContentResolver(),
+                Settings.Secure.ANDROID_ID);
+        deviceLocation.setDeviceId(android_id);
+        deviceLocation.setGeo(geo);
+        deviceLocation.setStatus(status);
+        deviceLocation.setLocationIds(list);
+        deviceLocation.setSessionId(UUID.randomUUID().toString());
+        deviceLocation.setSub(sharedPref.getSub());
+        return deviceLocation;
+    }
+
+    private GoogleApiClient.OnConnectionFailedListener connectionFailedListener =
+            new GoogleApiClient.OnConnectionFailedListener() {
+                @Override
+                public void onConnectionFailed(ConnectionResult connectionResult) {
+                    Log.e(TAG, "onConnectionFailed");
+                }
+            };
+
+    /**
+     * Create a Geofence list
+     */
+    public void createGeofences(double latitude, double longitude) {
+        Log.d(TAG, "createGeofences: called ");
+        String id = UUID.randomUUID().toString();
+        Geofence fence = new Geofence.Builder()
+                .setRequestId(id)
+                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_EXIT)
+                .setCircularRegion(latitude, longitude, 20)
+                .setExpirationDuration(Geofence.NEVER_EXPIRE)
+                .build();
+        Log.d(TAG, "createGeofences: fence lat " + latitude + " lon " + longitude);
+        mGeofenceList.add(fence);
+    }
+
+    private GeofencingRequest getGeofencingRequest() {
+        GeofencingRequest.Builder builder = new GeofencingRequest.Builder();
+
+        builder.setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER);
+        builder.addGeofences(mGeofenceList);
+        return builder.build();
+    }
+
+
+    private PendingIntent getGeofencePendingIntent() {
+        // Reuse the PendingIntent if we already have it.
+        if (mGeofencePendingIntent != null) {
+            return mGeofencePendingIntent;
+        }
+        intent = new Intent(mContext, GeofenceTransitionsIntentService.class);
+        // We use FLAG_UPDATE_CURRENT so that we get the same pending intent back when
+        // calling addGeofences() and removeGeofences().
+        return PendingIntent.getService(mContext, 0, intent, PendingIntent.
+                FLAG_UPDATE_CURRENT);
     }
 
 

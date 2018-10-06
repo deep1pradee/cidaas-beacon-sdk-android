@@ -33,7 +33,7 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
     TextView txtview;
     private List<CategoryResponse> model;
     private String sub="37c8c633-aed4-4ff5-a105-a3bcedba24a5";
-    private String access_token="eyJhbGciOiJSUzI1NiIsImtpZCI6IjEwMjM2ZWZiLWRlMjEtNDI5Mi04ZDRlLTRmZGIxNjhhZDg4ZSJ9.eyJzaWQiOiI1NzQ3Yjk4My1mNTc0LTQ4Y2ItYmZiMC04MGM1ZmIzYmJlMDUiLCJzdWIiOiIxZDY5M2JkNy0yNjNkLTRkZDQtOTRlMC03MDhmYmFiMmFiN2YiLCJpc3ViIjoiMzdjOGM2MzMtYWVkNC00ZmY1LWExMDUtYTNiY2VkYmEyNGE1IiwiYXVkIjoiNGQ1ZTZlMjAtOTM0Ny00MjU1LTk3OTAtNWI3MTk2ODQzMTAzIiwiaWF0IjoxNTM4NzE2MzAzLCJhdXRoX3RpbWUiOjE1Mzg3MTYzMDMsImlzcyI6Imh0dHBzOi8vbmlnaHRseWJ1aWxkLmNpZGFhcy5kZSIsImp0aSI6ImQzNDFhNmU3LTAwOWUtNDU4OC1iMzRmLWY1YzBlYmIyMGJhOCIsIm5vbmNlIjoiMTIzNDUiLCJzY29wZXMiOlsib3BlbmlkIl0sInJvbGVzIjpbIlVTRVIiXSwiZ3JvdXBzIjpbeyJncm91cElkIjoiQ0lEQUFTX0FETUlOUyIsInJvbGVzIjpbIlNFQ09OREFSWV9BRE1JTiJdfV0sImV4cCI6MTUzODgwMjcwMywiZW1haWwiOiJzdXByYWRhcmFvQGdtYWlsLmNvbSIsImdpdmVuX25hbWUiOiJza3JhbyJ9.Ej17vTj7VOm_DETkxiaItnyIMAqmxb76e2VP9ZiJUfOuUiF2qIh89KE8ArNDMvNTLX8knZUo7QDatwZL1rgPaU-YuxJKwIfcEFlSGaH6EF5gv1fCAIKOoNUMgocMNHgv6qcVQp648gjROqb6MWOdslNs2dAWGo5mGovZgXJTt3I";
+    private String access_token="eyJhbGciOiJSUzI1NiIsImtpZCI6IjEwMjM2ZWZiLWRlMjEtNDI5Mi04ZDRlLTRmZGIxNjhhZDg4ZSJ9.eyJzaWQiOiIzOGQ5YzQyZi0wNmVmLTRjNmQtYTYzMy1kNzg0MWViYjg1MjAiLCJzdWIiOiIxZDY5M2JkNy0yNjNkLTRkZDQtOTRlMC03MDhmYmFiMmFiN2YiLCJpc3ViIjoiMzdjOGM2MzMtYWVkNC00ZmY1LWExMDUtYTNiY2VkYmEyNGE1IiwiYXVkIjoiNGQ1ZTZlMjAtOTM0Ny00MjU1LTk3OTAtNWI3MTk2ODQzMTAzIiwiaWF0IjoxNTM4NzU0ODAxLCJhdXRoX3RpbWUiOjE1Mzg3NTQ4MDEsImlzcyI6Imh0dHBzOi8vbmlnaHRseWJ1aWxkLmNpZGFhcy5kZSIsImp0aSI6IjMyZGNkYzNlLTlhNjQtNDUwMS05NTc4LTMxN2U2NGExZDliZiIsIm5vbmNlIjoiMTIzNDUiLCJzY29wZXMiOlsib3BlbmlkIl0sInJvbGVzIjpbIlVTRVIiXSwiZ3JvdXBzIjpbeyJncm91cElkIjoiQ0lEQUFTX0FETUlOUyIsInJvbGVzIjpbIlNFQ09OREFSWV9BRE1JTiJdfV0sImV4cCI6MTUzODg0MTIwMSwiZW1haWwiOiJzdXByYWRhcmFvQGdtYWlsLmNvbSIsImdpdmVuX25hbWUiOiJza3JhbyJ9.FsZpv2PF1gheMxp7oCByC791VcLd_xG1jMYhDRRWKsNQJFNr4mHOhSCpA82z5HsyDy7dNWHoLECxvMUR1Y47h3-2EGmrSSvTjB9XnvS_HRQZI6EXzj2FJ3oM5BVZQqZLCJCo2MkBoollCM0tCCirDnhHjMzfFPFKq6-7FKrPwOI";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -120,24 +120,24 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
 
     @Override
     public void didEnterRegion(BeaconResult beacon) {
-        sendNotification("Enter " + beacon.getUuid() + " major " + beacon.getMajor() + " minor " + beacon.getMinor());
+        //sendNotification("Enter " + beacon.getUuid() + " major " + beacon.getMajor() + " minor " + beacon.getMinor());
         txtview.setText("didEnterRegion");
         Log.d("MainActivity", "didEnterRegion: " + beacon.getUuid() + " major " + beacon.getMajor() + " minor " + beacon.getMinor());
-        Toast.makeText(this, " didEnterRegion ", Toast.LENGTH_SHORT).show();
+      //  Toast.makeText(this, " didEnterRegion ", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void didExitRegion(BeaconResult beacon) {
-        sendNotification("Exit " + beacon.getUuid() + " major " + beacon.getMajor() + " minor " + beacon.getMinor());
+       // sendNotification("Exit " + beacon.getUuid() + " major " + beacon.getMajor() + " minor " + beacon.getMinor());
         txtview.setText("didExitRegion");
         Log.d("MainActivity", "didExitRegion: " + beacon.getUuid() + " major " + beacon.getMajor() + " minor " + beacon.getMinor());
-        Toast.makeText(this, " didExitRegion ", Toast.LENGTH_SHORT).show();
+      //  Toast.makeText(this, " didExitRegion ", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void didBeaconsInRange(BeaconResult beacon) {
         //  txtview.setText("didBeaconsInRange");
-        Log.d("MainActivity ", "didBeaconsInRange: " + beacon.getUuid() + " major " + beacon.getMajor() + " minor " + beacon.getMinor() + " distance " + beacon.getDistance());
+       // Log.d("MainActivity ", "didBeaconsInRange: " + beacon.getUuid() + " major " + beacon.getMajor() + " minor " + beacon.getMinor() + " distance " + beacon.getDistance());
         // beaconMonitor.startBeaconMonitoring(beacon);
         //  Toast.makeText(this, " didBeaconsInRange ", Toast.LENGTH_SHORT).show();
     }
@@ -146,14 +146,29 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
     public void didDetermineStateForRegion(int var1, BeaconResult var2) {
         txtview.setText("didDetermineStateForRegion");
         Log.d("MAinActivity", "didDetermineStateForRegion: ");
-        Toast.makeText(this, "Beacon state changed!", Toast.LENGTH_SHORT).show();
+      //  Toast.makeText(this, "Beacon state changed!", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onError(ErrorEntity errorEntity) {
-        txtview.setText(errorEntity.getMessage());
+        //txtview.setText(errorEntity.getMessage());
         Log.d("MAinActivity", "onError: ");
         Toast.makeText(this, "errorEntity " + errorEntity.getMessage(), Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void didEnterGeoRegion() {
+        sendNotification("Enter geo region");
+//        txtview.setText("Enter geo region ");
+        Toast.makeText(this, "Enter geo region ", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void didExitGeoRegion() {
+        sendNotification("Exited geo region");
+       // txtview.setText("Exited geo region");
+        Toast.makeText(this, "Exited geo region ", Toast.LENGTH_SHORT).show();
+
     }
 
 }

@@ -1,12 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="i.widaas.cidaaasbeaconsdk">
-    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
         android:allowBackup="true"
-        android:label="@string/app_name"
-        >
+        android:label="@string/app_name">
         <!-- uncomment the following to enable scanning for over 30 minutes on Android 7+ -->
         <service
             android:name="org.altbeacon.beacon.service.BeaconService"
@@ -15,5 +17,8 @@
                 android:name="longScanForcingEnabled"
                 android:value="true" />
         </service>
+        <service
+            android:name="cidaasbeaconsdk.Service.GeofenceTransitionsIntentService"
+            android:exported="true" />
     </application>
 </manifest>

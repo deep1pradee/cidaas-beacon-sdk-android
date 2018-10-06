@@ -1,4 +1,6 @@
 package cidaasbeaconsdk.Entity;
 
-public class RegionCallBack {
+public interface RegionCallBack {
+    public void OnEntered();
+    public void OnExited();
 }
