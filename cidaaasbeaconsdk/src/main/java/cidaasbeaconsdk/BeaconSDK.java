@@ -70,7 +70,7 @@ public class BeaconSDK {
     static BeaconHelper beaconHelper;
     private ArrayList<Geofence> mGeofenceList;
     String TAG = "main";
-    public static BeaconEvents mBeaconEvents;
+     static BeaconEvents mBeaconEvents;
     org.altbeacon.beacon.BeaconManager beaconManager;
     static BeaconConsumer beaconConsumer;
     static Intent serviceIntent;
@@ -121,12 +121,14 @@ public class BeaconSDK {
                     for (int i = 0; i < triggeringIds.length; i++) {
                         sharedPref.setLocationIds(triggeringIds[i]);
                     }
+                    mBeaconEvents.didEnterGeoRegion();
                     StartLocEmitService("STARTED");
                     Log.d(TAG, "OnEntered: " + triggeringIds.length);
                 }
 
                 @Override
                 public void OnExited() {
+                    mBeaconEvents.didExitGeoRegion();
                     StartLocEmitService("ENDED");
                     if (mGoogleApiClient != null && locationListener != null)
                         LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, locationListener);

@@ -10,7 +10,6 @@ import com.google.android.gms.location.GeofencingEvent;
 import java.util.ArrayList;
 import java.util.List;
 
-import cidaasbeaconsdk.BeaconSDK;
 import cidaasbeaconsdk.Entity.ErrorEntity;
 import cidaasbeaconsdk.Entity.RegionCallBack;
 import timber.log.Timber;
@@ -75,7 +74,7 @@ public class GeofenceTransitionsIntentService extends IntentService {
             Log.d(TAG, "Error: ");
             // Log the error.
             errorEntity.setMessage("Error");
-            BeaconSDK.mBeaconEvents.onError(errorEntity);
+           // BeaconSDK.mBeaconEvents.onError(errorEntity);
             Timber.d("Error", "Error");
             Log.e(TAG, "Error ");
         }
