@@ -82,7 +82,7 @@ public class BeaconSDK {
     //   double currentLatitude = 12.919564999999999, currentLongitude = 77.6683352;
     double currentLatitude = 0, currentLongitude = 0;
     // double defaultLat = 12.919592, defaultLon = 77.668214;
-   //   double defaultLat = 12.9075669, defaultLon = 77.5618457;
+    //   double defaultLat = 12.9075669, defaultLon = 77.5618457;
     //   double currentLatitude = 12.919523752209402, currentLongitude = 77.6682609109338;
     LocationRequest mLocationRequest;
     private GoogleApiClient mGoogleApiClient;
@@ -128,8 +128,8 @@ public class BeaconSDK {
                 @Override
                 public void OnExited() {
                     StartLocEmitService("ENDED");
-                    if (mGoogleApiClient != null &&  locationListener != null)
-                        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient,  locationListener);
+                    if (mGoogleApiClient != null && locationListener != null)
+                        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, locationListener);
                     Log.d(TAG, "OnExited: ");
                 }
             };
@@ -524,7 +524,7 @@ public class BeaconSDK {
                             currentLongitude = location.getLongitude();
 
                             StartLocEmitService("IN_PROGRESS");
-                            Log.i(TAG, "onLocationChanged " + location.getLatitude() + " " + location.getLongitude()+" -" );
+                            Log.i(TAG, "onLocationChanged " + location.getLatitude() + " " + location.getLongitude() + " -");
                         }
                     };
                     LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, locationListener);
@@ -596,9 +596,17 @@ public class BeaconSDK {
         if (list != null) {
             String[] array = new String[list.size()];
             deviceLocation.setLocationIds(array);
+        } else if (GeofenceTransitionsIntentService.list != null && GeofenceTransitionsIntentService.list.length > 0) {
+            String[] array = new String[GeofenceTransitionsIntentService.list.length];
+            deviceLocation.setLocationIds(array);
         }
         deviceLocation.setSessionId(sharedPref.getSessionId());
         deviceLocation.setSub(sharedPref.getSub());
+        //once ended remove all the ids from shared preference
+        if (status.equalsIgnoreCase("ENDED")) {
+            sharedPref.removeLocationId();
+            GeofenceTransitionsIntentService.list=new String[0];
+        }
         return deviceLocation;
     }
 
