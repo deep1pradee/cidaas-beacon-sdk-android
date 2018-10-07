@@ -12,7 +12,7 @@ public class LocationRequest {
 
     private String sessionId;
 
-    private String[] locationIds;
+   // private String[] locationIds;
 
     private String deviceId;
 
@@ -55,7 +55,7 @@ public class LocationRequest {
     {
         this.sessionId = sessionId;
     }
-
+/*
     public String[] getLocationIds ()
     {
         return locationIds;
@@ -64,7 +64,7 @@ public class LocationRequest {
     public void setLocationIds (String[] locationIds)
     {
         this.locationIds = locationIds;
-    }
+    }*/
 
     public String getDeviceId ()
     {

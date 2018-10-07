@@ -509,6 +509,7 @@ public class BeaconSDK {
 
 
     public void StartLocEmitService(String status) {
+        Log.d(TAG, "StartLocEmitService: " +status);
         serviceModel.updateLocation(sharedPref.getAccessToken(), getLocationRequest(currentLatitude, currentLongitude, status), SDKEntity.SDKEntityInstance.getBaseUrl());
     }
 
@@ -597,10 +598,10 @@ public class BeaconSDK {
         deviceLocation.setStatus(status);
         if (list != null) {
             String[] array = new String[list.size()];
-            deviceLocation.setLocationIds(array);
+           // deviceLocation.setLocationIds(array);
         } else if (GeofenceTransitionsIntentService.list != null && GeofenceTransitionsIntentService.list.length > 0) {
             String[] array = new String[GeofenceTransitionsIntentService.list.length];
-            deviceLocation.setLocationIds(array);
+            //deviceLocation.setLocationIds(array);
         }
         deviceLocation.setSessionId(sharedPref.getSessionId());
         deviceLocation.setSub(sharedPref.getSub());
