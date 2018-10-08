@@ -12,6 +12,7 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.util.Log;
@@ -88,6 +89,7 @@ public class BeaconSDK {
     private GoogleApiClient mGoogleApiClient;
     private PendingIntent mGeofencePendingIntent;
     Intent intent;
+    private boolean isExcecute = false;
 
 
     public void registerEvents(BeaconEvents beaconEvents) {
@@ -443,7 +445,20 @@ public class BeaconSDK {
                             String android_id = Settings.Secure.getString(mContext.getContentResolver(),
                                     Settings.Secure.ANDROID_ID);
                             BeaconEmitRequest beaconEmitRequest = setUpRequestEntity(firstBeacon, android_id, sub);
-                            serviceModel.updateBeacon(access_token, beaconEmitRequest, SDKEntity.SDKEntityInstance.getBaseUrl());
+
+
+                            final Handler handler = new Handler();
+                            Runnable runnable = new Runnable() {
+                                public void run() {
+                                    handler.postDelayed(this, 6000);
+                                    isExcecute = true;
+                                }
+                            };
+                            runnable.run();
+                            if (isExceute) {
+                                isExceute = false;
+                                serviceModel.updateBeacon(access_token, beaconEmitRequest, SDKEntity.SDKEntityInstance.getBaseUrl());
+                            }
                         }
                     }
                 }
@@ -578,8 +593,7 @@ public class BeaconSDK {
                             // Catch exception generated if the app does not use ACCESS_FINE_LOCATION permission.
                             Log.e(TAG, "Error");
                         }
-                    }catch(Exception ex)
-                    {
+                    } catch (Exception ex) {
 
                     }
 
@@ -592,7 +606,7 @@ public class BeaconSDK {
                             LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, locationListener);
 
                     } catch (Exception ex) {
-                        Log.d(TAG, "onConnectionSuspended: "+ex.getMessage());
+                        Log.d(TAG, "onConnectionSuspended: " + ex.getMessage());
                     }
 
                     Log.e(TAG, "onConnectionSuspended");
