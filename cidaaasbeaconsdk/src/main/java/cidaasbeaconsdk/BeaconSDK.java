@@ -70,7 +70,7 @@ public class BeaconSDK {
     static BeaconHelper beaconHelper;
     private ArrayList<Geofence> mGeofenceList;
     String TAG = "main";
-     static BeaconEvents mBeaconEvents;
+    static BeaconEvents mBeaconEvents;
     org.altbeacon.beacon.BeaconManager beaconManager;
     static BeaconConsumer beaconConsumer;
     static Intent serviceIntent;
@@ -232,11 +232,19 @@ public class BeaconSDK {
     public void unbind() {
         if (beaconManager != null)
             beaconManager.unbind(beaconConsumer);
+        if (!mGoogleApiClient.isConnected()) {
+            mGoogleApiClient.connect();
+        }
     }
 
     public void setUpBackgroundMode(boolean isBackgroundMode) {
         if (beaconManager != null && beaconManager.isBound(beaconConsumer))
             beaconManager.setBackgroundMode(isBackgroundMode);
+    }
+
+    private void resumeLocationUpdates() {
+        Log.i("RESUMING", "RESUMING LOCATION UPDATES");
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, locationListener);
     }
 
     @NonNull
@@ -509,7 +517,7 @@ public class BeaconSDK {
 
 
     public void StartLocEmitService(String status) {
-        Log.d(TAG, "StartLocEmitService: " +status);
+        Log.d(TAG, "StartLocEmitService: " + status);
         serviceModel.updateLocation(sharedPref.getAccessToken(), getLocationRequest(currentLatitude, currentLongitude, status), SDKEntity.SDKEntityInstance.getBaseUrl());
     }
 
@@ -517,62 +525,75 @@ public class BeaconSDK {
             new GoogleApiClient.ConnectionCallbacks() {
                 @Override
                 public void onConnected(Bundle bundle) {
-                    Log.i(TAG, "onConnected");
+                    try {
+                        Log.i(TAG, "onConnected");
 
-                    Location location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-                    locationListener = new com.google.android.gms.location.LocationListener() {
-                        @Override
-                        public void onLocationChanged(Location location) {
+                        Location location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+                        locationListener = new com.google.android.gms.location.LocationListener() {
+                            @Override
+                            public void onLocationChanged(Location location) {
+                                currentLatitude = location.getLatitude();
+                                currentLongitude = location.getLongitude();
+
+                                StartLocEmitService("IN_PROGRESS");
+                                Log.i(TAG, "onLocationChanged " + location.getLatitude() + " " + location.getLongitude() + " -");
+                            }
+                        };
+                        resumeLocationUpdates();
+                        if (location == null) {
+                            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, locationListener);
+
+                        } else {
+                            //If everything went fine lets get latitude and longitude
                             currentLatitude = location.getLatitude();
                             currentLongitude = location.getLongitude();
+                            Log.i(TAG, currentLatitude + " WORKS " + currentLongitude);
 
-                            StartLocEmitService("IN_PROGRESS");
-                            Log.i(TAG, "onLocationChanged " + location.getLatitude() + " " + location.getLongitude() + " -");
+                            //createGeofences(currentLatitude, currentLongitude);
+                            //registerGeofences(mGeofenceList);
                         }
-                    };
-                    LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, locationListener);
-                    if (location == null) {
-                        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, locationListener);
+                        sharedPref.setLat(String.valueOf(currentLatitude));
+                        sharedPref.setLon(String.valueOf(currentLongitude));
+                        Timber.d("lat " + currentLatitude + " lon " + currentLongitude);
+                        try {
+                            LocationServices.GeofencingApi.addGeofences(
+                                    mGoogleApiClient,
+                                    getGeofencingRequest(),
+                                    getGeofencePendingIntent()
+                            ).setResultCallback(new ResultCallback<Status>() {
 
-                    } else {
-                        //If everything went fine lets get latitude and longitude
-                        currentLatitude = location.getLatitude();
-                        currentLongitude = location.getLongitude();
-                        Log.i(TAG, currentLatitude + " WORKS " + currentLongitude);
+                                @Override
+                                public void onResult(Status status) {
+                                    if (status.isSuccess()) {
+                                        Log.i(TAG, "Saving Geofence");
 
-                        //createGeofences(currentLatitude, currentLongitude);
-                        //registerGeofences(mGeofenceList);
-                    }
-                    sharedPref.setLat(String.valueOf(currentLatitude));
-                    sharedPref.setLon(String.valueOf(currentLongitude));
-                    Timber.d("lat " + currentLatitude + " lon " + currentLongitude);
-                    try {
-                        LocationServices.GeofencingApi.addGeofences(
-                                mGoogleApiClient,
-                                getGeofencingRequest(),
-                                getGeofencePendingIntent()
-                        ).setResultCallback(new ResultCallback<Status>() {
-
-                            @Override
-                            public void onResult(Status status) {
-                                if (status.isSuccess()) {
-                                    Log.i(TAG, "Saving Geofence");
-
-                                } else {
-                                    Log.e(TAG, "Registering geofence failed: " + status.getStatusMessage() +
-                                            " : " + status.getStatusCode());
+                                    } else {
+                                        Log.e(TAG, "Registering geofence failed: " + status.getStatusMessage() +
+                                                " : " + status.getStatusCode());
+                                    }
                                 }
-                            }
-                        });
+                            });
 
-                    } catch (SecurityException securityException) {
-                        // Catch exception generated if the app does not use ACCESS_FINE_LOCATION permission.
-                        Log.e(TAG, "Error");
+                        } catch (SecurityException securityException) {
+                            // Catch exception generated if the app does not use ACCESS_FINE_LOCATION permission.
+                            Log.e(TAG, "Error");
+                        }
+                    }catch(Exception ex)
+                    {
+
                     }
+
                 }
 
                 @Override
                 public void onConnectionSuspended(int i) {
+                    try {
+                        if (mGoogleApiClient != null && locationListener != null)
+                            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, locationListener);
+
+                    } catch (Exception ex) {
+                        Log.d(TAG, "onConnectionSuspended: "+ex.getMessage());
+                    }
 
                     Log.e(TAG, "onConnectionSuspended");
 
@@ -598,7 +619,7 @@ public class BeaconSDK {
         deviceLocation.setStatus(status);
         if (list != null) {
             String[] array = new String[list.size()];
-           // deviceLocation.setLocationIds(array);
+            // deviceLocation.setLocationIds(array);
         } else if (GeofenceTransitionsIntentService.list != null && GeofenceTransitionsIntentService.list.length > 0) {
             String[] array = new String[GeofenceTransitionsIntentService.list.length];
             //deviceLocation.setLocationIds(array);
@@ -608,7 +629,7 @@ public class BeaconSDK {
         //once ended remove all the ids from shared preference
         if (status.equalsIgnoreCase("ENDED")) {
             sharedPref.removeLocationId();
-            GeofenceTransitionsIntentService.list=new String[0];
+            GeofenceTransitionsIntentService.list = new String[0];
         }
         return deviceLocation;
     }
