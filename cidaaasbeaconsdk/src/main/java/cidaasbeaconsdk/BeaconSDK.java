@@ -455,8 +455,8 @@ public class BeaconSDK {
                                 }
                             };
                             runnable.run();
-                            if (isExceute) {
-                                isExceute = false;
+                            if (isExcecute) {
+                                isExcecute = false;
                                 serviceModel.updateBeacon(access_token, beaconEmitRequest, SDKEntity.SDKEntityInstance.getBaseUrl());
                             }
                         }
