@@ -55,6 +55,7 @@ import cidaasbeaconsdk.Entity.ProximityListRequest;
 import cidaasbeaconsdk.Entity.RegionCallBack;
 import cidaasbeaconsdk.Entity.Result;
 import cidaasbeaconsdk.Helper.BeaconHelper;
+import cidaasbeaconsdk.Helper.Logger;
 import cidaasbeaconsdk.Helper.SharedPref;
 import cidaasbeaconsdk.Service.GeofenceTransitionsIntentService;
 import cidaasbeaconsdk.Service.ServiceModel;
@@ -78,6 +79,7 @@ public class BeaconSDK {
     private AssetManager assetManager;
     private String configurationFileName;
     SharedPref sharedPref;
+    Logger logger;
     com.google.android.gms.location.LocationListener locationListener;
     /*12.919471096259466, */
     //   double currentLatitude = 12.919564999999999, currentLongitude = 77.6683352;
@@ -117,6 +119,7 @@ public class BeaconSDK {
                     .setBeaconLayout("m:2-3=beac,i:4-19,i:20-21,i:22-23,p:24-24,d:25-25"));
             serviceModel = new ServiceModelImpl();
             sharedPref = getSharedPrefInstance(mContext);
+            logger=Logger.getShared();
             GeofenceTransitionsIntentService.regionCallBack = new RegionCallBack() {
                 @Override
                 public void OnEntered(String[] triggeringIds) {
@@ -125,7 +128,7 @@ public class BeaconSDK {
                     }
                     mBeaconEvents.didEnterGeoRegion();
                     StartLocEmitService("STARTED");
-                    Log.d(TAG, "OnEntered: " + triggeringIds.length);
+                    logger.addRecordToLog("OnEntered: " + triggeringIds.length);
                 }
 
                 @Override
@@ -134,7 +137,7 @@ public class BeaconSDK {
                     StartLocEmitService("ENDED");
                     if (mGoogleApiClient != null && locationListener != null)
                         LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, locationListener);
-                    Log.d(TAG, "OnExited: ");
+                    logger.addRecordToLog("OnExited: ");
                 }
             };
         } else {
@@ -188,7 +191,7 @@ public class BeaconSDK {
                 createGeofences(data);
 
         } else {
-            Log.e(TAG, "Your Device doesn't support Google Play Services.");
+            logger.addRecordToLog("Your Device doesn't support Google Play Services.");
         }
 
         // Create the LocationRequest object
@@ -234,7 +237,7 @@ public class BeaconSDK {
     public void unbind() {
         if (beaconManager != null)
             beaconManager.unbind(beaconConsumer);
-        if (!mGoogleApiClient.isConnected()) {
+        if (mGoogleApiClient != null &&!mGoogleApiClient.isConnected()){
             mGoogleApiClient.connect();
         }
     }
@@ -245,7 +248,7 @@ public class BeaconSDK {
     }
 
     private void resumeLocationUpdates() {
-        Log.i("RESUMING", "RESUMING LOCATION UPDATES");
+        logger.addRecordToLog("RESUMING LOCATION UPDATES");
         LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, locationListener);
     }
 
@@ -286,7 +289,7 @@ public class BeaconSDK {
     public void startBeaconMonitoring(final List<CategoryResponse> beaconList, final String sub, final String access_token) {
         ErrorEntity errorEntity;
 
-        if (isBTOn() && isNetworkConnected() && isGPSON()) {
+        if (/*isBTOn() && */isNetworkConnected() && isGPSON()) {
             sharedPref.setAccessToken(access_token);
             sharedPref.setSub(sub);
 
@@ -398,6 +401,7 @@ public class BeaconSDK {
 
 
     public void setURLFile(AssetManager asset, String fileName) {
+        logger.addRecordToLog("file name :"+fileName);
         assetManager = asset;
         configurationFileName = fileName;
         SDKEntity.SDKEntityInstance.readInputs(assetManager, configurationFileName, mContext);
@@ -532,7 +536,7 @@ public class BeaconSDK {
 
 
     public void StartLocEmitService(String status) {
-        Log.d(TAG, "StartLocEmitService: " + status);
+        logger.addRecordToLog("StartLocEmitService: " + status);
         serviceModel.updateLocation(sharedPref.getAccessToken(), getLocationRequest(currentLatitude, currentLongitude, status), SDKEntity.SDKEntityInstance.getBaseUrl());
     }
 
@@ -551,7 +555,7 @@ public class BeaconSDK {
                                 currentLongitude = location.getLongitude();
 
                                 StartLocEmitService("IN_PROGRESS");
-                                Log.i(TAG, "onLocationChanged " + location.getLatitude() + " " + location.getLongitude() + " -");
+                                logger.addRecordToLog("onLocationChanged " + location.getLatitude() + " " + location.getLongitude());
                             }
                         };
                         resumeLocationUpdates();
@@ -562,7 +566,7 @@ public class BeaconSDK {
                             //If everything went fine lets get latitude and longitude
                             currentLatitude = location.getLatitude();
                             currentLongitude = location.getLongitude();
-                            Log.i(TAG, currentLatitude + " WORKS " + currentLongitude);
+                            logger.addRecordToLog(currentLatitude + " WORKS " + currentLongitude);
 
                             //createGeofences(currentLatitude, currentLongitude);
                             //registerGeofences(mGeofenceList);
@@ -580,10 +584,10 @@ public class BeaconSDK {
                                 @Override
                                 public void onResult(Status status) {
                                     if (status.isSuccess()) {
-                                        Log.i(TAG, "Saving Geofence");
+                                        logger.addRecordToLog("Saving Geofence");
 
                                     } else {
-                                        Log.e(TAG, "Registering geofence failed: " + status.getStatusMessage() +
+                                        logger.addRecordToLog("Registering geofence failed: " + status.getStatusMessage() +
                                                 " : " + status.getStatusCode());
                                     }
                                 }
@@ -591,7 +595,7 @@ public class BeaconSDK {
 
                         } catch (SecurityException securityException) {
                             // Catch exception generated if the app does not use ACCESS_FINE_LOCATION permission.
-                            Log.e(TAG, "Error");
+                            logger.addRecordToLog("Error");
                         }
                     } catch (Exception ex) {
 
@@ -606,10 +610,10 @@ public class BeaconSDK {
                             LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, locationListener);
 
                     } catch (Exception ex) {
-                        Log.d(TAG, "onConnectionSuspended: " + ex.getMessage());
+                        logger.addRecordToLog("onConnectionSuspended: " + ex.getMessage());
                     }
 
-                    Log.e(TAG, "onConnectionSuspended");
+                    logger.addRecordToLog("onConnectionSuspended");
 
                 }
             };
@@ -652,7 +656,7 @@ public class BeaconSDK {
             new GoogleApiClient.OnConnectionFailedListener() {
                 @Override
                 public void onConnectionFailed(ConnectionResult connectionResult) {
-                    Log.e(TAG, "onConnectionFailed");
+                    logger.addRecordToLog("onConnectionFailed");
                 }
             };
 
@@ -660,7 +664,7 @@ public class BeaconSDK {
      * Create a Geofence list
      */
     public void createGeofences(LOcationCordinates data) {
-        Log.d(TAG, "createGeofences: called ");
+        logger.addRecordToLog("createGeofences: called ");
         if (data.getData() != null) {
             for (int i = 0; i < data.getData().length; i++) {
                 try {
@@ -672,7 +676,7 @@ public class BeaconSDK {
                                     Double.parseDouble(data.getData()[i].getCoordinates()[0]), data.getData()[i].getRadius())
                             .setExpirationDuration(Geofence.NEVER_EXPIRE)
                             .build();
-                    Log.d(TAG, "createGeofences: fence lat " + data.getData()[i].getCoordinates()[1] + " lon " + data.getData()[i].getCoordinates()[0]);
+                    logger.addRecordToLog("createGeofences: fence lat " + data.getData()[i].getCoordinates()[1] + " lon " + data.getData()[i].getCoordinates()[0]);
                     mGeofenceList.add(fence);
 
                 } catch (Exception e) {

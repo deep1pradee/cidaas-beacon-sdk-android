@@ -1,6 +1,7 @@
 package widaas.cidaas_beacon_sdk_android;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.TaskStackBuilder;
@@ -10,6 +11,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -22,9 +24,7 @@ import cidaasbeaconsdk.BeaconSDK;
 import cidaasbeaconsdk.Entity.BeaconEvents;
 import cidaasbeaconsdk.Entity.BeaconResult;
 import cidaasbeaconsdk.Entity.CategoryResponse;
-import cidaasbeaconsdk.Entity.CategoryResponseEntity;
 import cidaasbeaconsdk.Entity.ErrorEntity;
-import cidaasbeaconsdk.Entity.Result;
 import timber.log.Timber;
 
 public class MainActivity extends AppCompatActivity implements BeaconEvents {
@@ -34,6 +34,7 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
     private List<CategoryResponse> model;
     private String sub="1d693bd7-263d-4dd4-94e0-708fbab2ab7f";
     private String access_token="eyJhbGciOiJSUzI1NiIsImtpZCI6IjEwMjM2ZWZiLWRlMjEtNDI5Mi04ZDRlLTRmZGIxNjhhZDg4ZSJ9.eyJzaWQiOiJkOWFlMjg0ZS0xNjk5LTQzZWMtYThkNS0wNGZmNzJjZWQwYTgiLCJzdWIiOiIxZDY5M2JkNy0yNjNkLTRkZDQtOTRlMC03MDhmYmFiMmFiN2YiLCJpc3ViIjoiMzdjOGM2MzMtYWVkNC00ZmY1LWExMDUtYTNiY2VkYmEyNGE1IiwiYXVkIjoiNGQ1ZTZlMjAtOTM0Ny00MjU1LTk3OTAtNWI3MTk2ODQzMTAzIiwiaWF0IjoxNTM4ODg5NTM2LCJhdXRoX3RpbWUiOjE1Mzg4ODk1MzYsImlzcyI6Imh0dHBzOi8vbmlnaHRseWJ1aWxkLmNpZGFhcy5kZSIsImp0aSI6IjRhNTAxNjNhLWNkMDktNGFhMC1iYzY2LTM2ZDRjNWNkYjY3MSIsIm5vbmNlIjoiMTIzNDUiLCJzY29wZXMiOlsib3BlbmlkIl0sInJvbGVzIjpbIlVTRVIiXSwiZ3JvdXBzIjpbeyJncm91cElkIjoiQ0lEQUFTX0FETUlOUyIsInJvbGVzIjpbIlNFQ09OREFSWV9BRE1JTiJdfV0sImV4cCI6MTUzODk3NTkzNiwiZW1haWwiOiJzdXByYWRhcmFvQGdtYWlsLmNvbSIsImdpdmVuX25hbWUiOiJza3JhbyJ9.jlaHzSGQEb3NuoV0ml-mi5vFJ5MzgzzIbWMhqu1ZoAWqo6jAeNSHCoceia15f9P2VbbufszseMF_O20GfoZN4K4LcZ0qx9jTzgskgf3qOClFXHpMy7IVJSXDKEEhgU1ij815AHFoPRcsmy4Di71VAkq7JrbTW0qVcj-Plc2gFB4";
+    private static final int REQUEST = 112;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,9 +46,12 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
         }
+
+
+
         beaconMonitor.setURLFile(getAssets(), "properties.xml");
         beaconMonitor.setBeaconLayout("m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24,d:25-25");
-        beaconMonitor.getBeaconUUIDs(new Result<CategoryResponseEntity>() {
+        /*beaconMonitor.getBeaconUUIDs(new Result<CategoryResponseEntity>() {
             @Override
             public void onSuccess(CategoryResponseEntity result) {
                 model=result.getData();
@@ -58,14 +62,23 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
             public void onError(ErrorEntity errorEntity) {
                 Toast.makeText(MainActivity.this, errorEntity.getMessage(), Toast.LENGTH_SHORT).show();
             }
-        });
+        });*/
         if (model != null && model.size() > 0) {
             for (int i = 0; i < model.size(); i++) {
                 Timber.d("MainActivity", "onCreate: " + model.get(i));
             }
         }
     }
-
+    private static boolean hasPermissions(Context context, String... permissions) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && context != null && permissions != null) {
+            for (String permission : permissions) {
+                if (ActivityCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -91,10 +104,31 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
             case PERMISSION_REQUEST_COARSE_LOCATION: {
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     // Permission granted, yay! Start the Bluetooth device scan.
+                    if (Build.VERSION.SDK_INT >= 23) {
+                        String[] PERMISSIONS = {android.Manifest.permission.WRITE_EXTERNAL_STORAGE};
+                        if (!hasPermissions(this, PERMISSIONS)) {
+                            ActivityCompat.requestPermissions((Activity) this, PERMISSIONS, REQUEST );
+                        }
+                    }
                 } else {
                     // Alert the user that this application requires the location permission to perform the scan.
+                    if (Build.VERSION.SDK_INT >= 23) {
+                        String[] PERMISSIONS = {android.Manifest.permission.WRITE_EXTERNAL_STORAGE};
+                        if (!hasPermissions(this, PERMISSIONS)) {
+                            ActivityCompat.requestPermissions((Activity) this, PERMISSIONS, REQUEST );
+                        }
+                    }
                 }
             }
+            break;
+            case REQUEST: {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    //do here
+                } else {
+                    Toast.makeText(this, "The app was not allowed to write in your storage", Toast.LENGTH_LONG).show();
+                }
+            }
+            break;
         }
     }
 

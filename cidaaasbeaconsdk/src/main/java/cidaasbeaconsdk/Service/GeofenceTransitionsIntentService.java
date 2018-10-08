@@ -2,7 +2,6 @@ package cidaasbeaconsdk.Service;
 
 import android.app.IntentService;
 import android.content.Intent;
-import android.util.Log;
 
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingEvent;
@@ -12,7 +11,7 @@ import java.util.List;
 
 import cidaasbeaconsdk.Entity.ErrorEntity;
 import cidaasbeaconsdk.Entity.RegionCallBack;
-import timber.log.Timber;
+import cidaasbeaconsdk.Helper.Logger;
 
 public class GeofenceTransitionsIntentService extends IntentService {
 
@@ -25,15 +24,16 @@ public class GeofenceTransitionsIntentService extends IntentService {
     }
 
     static List<Geofence> triggeringGeofences = new ArrayList<>();
+    Logger logger;
 
     @Override
     protected void onHandleIntent(Intent intent) {
-        Log.i(TAG, "onHandleIntent");
+        logger.addRecordToLog("onHandleIntent");
         GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(intent);
         if (geofencingEvent.hasError()) {
             //String errorMessage = GeofenceErrorMessages.getErrorString(this,
             //      geofencingEvent.getErrorCode());
-            Log.e(TAG, "Goefencing Error " + geofencingEvent.getErrorCode());
+            logger.addRecordToLog("Goefencing Error " + geofencingEvent.getErrorCode());
             return;
         }
 
@@ -43,9 +43,9 @@ public class GeofenceTransitionsIntentService extends IntentService {
         ErrorEntity errorEntity = new ErrorEntity();
         errorEntity.setStatus(417);
         errorEntity.setSuccess(false);
-        Log.i(TAG, "geofenceTransition = " + geofenceTransition + " Enter : " + Geofence.GEOFENCE_TRANSITION_ENTER + "Exit : " + Geofence.GEOFENCE_TRANSITION_EXIT);
+        logger.addRecordToLog("geofenceTransition = " + geofenceTransition + " Enter : " + Geofence.GEOFENCE_TRANSITION_ENTER + "Exit : " + Geofence.GEOFENCE_TRANSITION_EXIT);
         if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER || geofenceTransition == Geofence.GEOFENCE_TRANSITION_DWELL) {
-            Log.d(TAG, "onHandleIntent: Entered Entered the Location " + triggeringGeofences.size());
+            logger.addRecordToLog("onHandleIntent: Entered Entered the Location " + triggeringGeofences.size());
             /*errorEntity.setMessage("Entered the Location");
             BeaconSDK.mBeaconEvents.onError(errorEntity);
             BeaconSDK.mBeaconEvents.didEnterGeoRegion();*/
@@ -62,8 +62,8 @@ public class GeofenceTransitionsIntentService extends IntentService {
 
 
         } else if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
-            Log.d(TAG, "Showing Notification...");
-            Timber.d("Exited", "Exited the Location");
+            logger.addRecordToLog( "Showing Notification...");
+            logger.addRecordToLog("Exited Exited the Location");
            /* errorEntity.setMessage("Exited the Location");
             BeaconSDK.mBeaconEvents.onError(errorEntity);
             BeaconSDK.mBeaconEvents.didExitGeoRegion();*/
@@ -71,12 +71,12 @@ public class GeofenceTransitionsIntentService extends IntentService {
                 regionCallBack.OnExited();
             }
         } else {
-            Log.d(TAG, "Error: ");
+            logger.addRecordToLog("Error: ");
             // Log the error.
             errorEntity.setMessage("Error");
-           // BeaconSDK.mBeaconEvents.onError(errorEntity);
-            Timber.d("Error", "Error");
-            Log.e(TAG, "Error ");
+            // BeaconSDK.mBeaconEvents.onError(errorEntity);
+            logger.addRecordToLog("Error");
+            logger.addRecordToLog( "Error ");
         }
     }
 
