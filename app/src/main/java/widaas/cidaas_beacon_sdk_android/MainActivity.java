@@ -190,7 +190,7 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
     public void onError(ErrorEntity errorEntity) {
         //txtview.setText(errorEntity.getMessage());
         Log.d("MAinActivity", "onError: "+errorEntity.getMessage());
-       // Toast.makeText(this, "errorEntity " + errorEntity.getMessage(), Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "errorEntity " + errorEntity.getMessage(), Toast.LENGTH_SHORT).show();
     }
 
     @Override

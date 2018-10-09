@@ -123,6 +123,7 @@ public class BeaconSDK {
             GeofenceTransitionsIntentService.regionCallBack = new RegionCallBack() {
                 @Override
                 public void OnEntered(String[] triggeringIds) {
+                    resumeLocationUpdates();
                     for (int i = 0; i < triggeringIds.length; i++) {
                         sharedPref.setLocationIds(triggeringIds[i]);
                     }
@@ -145,7 +146,7 @@ public class BeaconSDK {
                 errorEntity = new ErrorEntity();
                 errorEntity.setStatus(417);
                 errorEntity.setSuccess(false);
-                errorEntity.setMessage("Please make sure you enabled your Internet / GPS / Bluetooth");
+                errorEntity.setMessage("Please provide activity context ");
                 mBeaconEvents.onError(errorEntity);
             }
         }
@@ -154,11 +155,22 @@ public class BeaconSDK {
     }
 
     private boolean isGPSON() {
-        final LocationManager manager = (LocationManager) mContext.getSystemService(Context.LOCATION_SERVICE);
-        if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+        LocationManager lm = (LocationManager) mContext.getSystemService(Context.LOCATION_SERVICE);
+        boolean gps_enabled = false;
+        boolean network_enabled = false;
+
+        try {
+            gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        } catch (Exception ex) {
+        }
+
+        try {
+            network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        } catch (Exception ex) {
+        }
+        if (!gps_enabled && !network_enabled) {
             return false;
-        } else
-            return true;
+        } else return true;
     }
 
     private boolean isBTOn() {
@@ -237,11 +249,16 @@ public class BeaconSDK {
 
 
     public void unbind() {
-        if (beaconManager != null)
-            beaconManager.unbind(beaconConsumer);
-        if (mGoogleApiClient != null && !mGoogleApiClient.isConnected()) {
-            mGoogleApiClient.connect();
+        try {
+            if (beaconManager != null)
+                beaconManager.unbind(beaconConsumer);
+            if (mGoogleApiClient != null && !mGoogleApiClient.isConnected()) {
+                mGoogleApiClient.connect();
+            }
+        } catch (Exception ex) {
+            logger.addRecordToLog(ex.getMessage());
         }
+
     }
 
     public void setUpBackgroundMode(boolean isBackgroundMode) {
@@ -251,7 +268,8 @@ public class BeaconSDK {
 
     private void resumeLocationUpdates() {
         logger.addRecordToLog("RESUMING LOCATION UPDATES");
-        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, locationListener);
+        if (mGoogleApiClient != null && mLocationRequest != null && locationListener != null)
+            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, locationListener);
     }
 
     @NonNull
@@ -346,7 +364,7 @@ public class BeaconSDK {
                 errorEntity = new ErrorEntity();
                 errorEntity.setStatus(417);
                 errorEntity.setSuccess(false);
-                logger.addRecordToLog("Please make sure you enabled your Internet / GPS / Bluetooth");
+                logger.addRecordToLog("Please make sure you enabledPlease make sure you enabled your Internet / GPS / Bluetooth");
                 errorEntity.setMessage("Please make sure you enabled your Internet / GPS / Bluetooth");
                 mBeaconEvents.onError(errorEntity);
             }
@@ -570,7 +588,8 @@ public class BeaconSDK {
                         };
                         resumeLocationUpdates();
                         if (location == null) {
-                            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, locationListener);
+                            resumeLocationUpdates();
+                            // LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, locationListener);
 
                         } else {
                             //If everything went fine lets get latitude and longitude
