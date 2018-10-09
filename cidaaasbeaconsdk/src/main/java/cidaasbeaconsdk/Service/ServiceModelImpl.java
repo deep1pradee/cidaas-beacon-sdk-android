@@ -106,7 +106,7 @@ public class ServiceModelImpl implements ServiceModel {
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
-        iService.locationEmit(url + LOCATION_EMIT_SERVICE, CONTENT_TYPE_JSON, access_token, deviceLocation)
+       /* iService.locationEmit(url + LOCATION_EMIT_SERVICE, CONTENT_TYPE_JSON, access_token, deviceLocation)
                 .enqueue(new Callback<ResponseBody>() {
                              @Override
                              public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
@@ -121,7 +121,7 @@ public class ServiceModelImpl implements ServiceModel {
                                  logger.addRecordToLog(t.getMessage() + "update location REsponse");
                              }
                          }
-                );
+                );*/
     }
 
     @Override
