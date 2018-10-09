@@ -38,18 +38,25 @@ public class GeofenceTransitionsIntentService extends IntentService {
         // Get the transition type.
         int geofenceTransition = geofencingEvent.getGeofenceTransition();
         triggeringGeofences = geofencingEvent.getTriggeringGeofences();
+
         ErrorEntity errorEntity = new ErrorEntity();
         errorEntity.setStatus(417);
         errorEntity.setSuccess(false);
+
         logger.addRecordToLog("geofenceTransition = " + geofenceTransition + " Enter : " + Geofence.GEOFENCE_TRANSITION_ENTER + " Exit : " + Geofence.GEOFENCE_TRANSITION_EXIT);
-        if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER || geofenceTransition == Geofence.GEOFENCE_TRANSITION_DWELL) {
+
+        if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
+
             logger.addRecordToLog("onHandleIntent: Entered the Location " + triggeringGeofences.size());
+
             if (triggeringGeofences != null && triggeringGeofences.size() > 0) {
                 list = new String[triggeringGeofences.size()];
                 for (int i = 0; i < triggeringGeofences.size(); i++) {
                     list[i] = triggeringGeofences.get(i).getRequestId();
                 }
             }
+
+
             if (regionCallBack != null) {
                 regionCallBack.OnEntered(getTriggeringIds());
             }
@@ -61,6 +68,7 @@ public class GeofenceTransitionsIntentService extends IntentService {
            /* errorEntity.setMessage("Exited the Location");
             BeaconSDK.mBeaconEvents.onError(errorEntity);
             BeaconSDK.mBeaconEvents.didExitGeoRegion();*/
+
             if (regionCallBack != null) {
                 regionCallBack.OnExited();
             }
