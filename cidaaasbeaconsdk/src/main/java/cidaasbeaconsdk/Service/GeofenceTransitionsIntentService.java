@@ -62,6 +62,8 @@ public class GeofenceTransitionsIntentService extends IntentService {
             }
 
 
+
+
         } else if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
             logger.addRecordToLog( "Showing Notification...");
             logger.addRecordToLog("Exited Exited the Location");
