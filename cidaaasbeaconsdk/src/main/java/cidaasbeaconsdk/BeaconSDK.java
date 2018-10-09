@@ -17,6 +17,7 @@ import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -62,7 +63,6 @@ import cidaasbeaconsdk.Service.ServiceModel;
 import cidaasbeaconsdk.Service.ServiceModelImpl;
 import i.widaas.cidaaasbeaconsdk.BuildConfig;
 import okhttp3.Request;
-import timber.log.Timber;
 
 import static cidaasbeaconsdk.Helper.SharedPref.getSharedPrefInstance;
 
@@ -119,7 +119,7 @@ public class BeaconSDK {
                     .setBeaconLayout("m:2-3=beac,i:4-19,i:20-21,i:22-23,p:24-24,d:25-25"));
             serviceModel = new ServiceModelImpl();
             sharedPref = getSharedPrefInstance(mContext);
-            logger=Logger.getShared();
+            logger = Logger.getShared();
             GeofenceTransitionsIntentService.regionCallBack = new RegionCallBack() {
                 @Override
                 public void OnEntered(String[] triggeringIds) {
@@ -185,10 +185,12 @@ public class BeaconSDK {
 
         int resp = GooglePlayServicesUtil.isGooglePlayServicesAvailable(mContext);
         if (resp == ConnectionResult.SUCCESS) {
-
+            logger.addRecordToLog("Google api client connecction success " + resp);
             initGoogleAPIClient();
-            if (data != null)
+            if (data != null) {
+                logger.addRecordToLog("location coordinates call data is not null");
                 createGeofences(data);
+            }
 
         } else {
             logger.addRecordToLog("Your Device doesn't support Google Play Services.");
@@ -237,7 +239,7 @@ public class BeaconSDK {
     public void unbind() {
         if (beaconManager != null)
             beaconManager.unbind(beaconConsumer);
-        if (mGoogleApiClient != null &&!mGoogleApiClient.isConnected()){
+        if (mGoogleApiClient != null && !mGoogleApiClient.isConnected()) {
             mGoogleApiClient.connect();
         }
     }
@@ -253,7 +255,7 @@ public class BeaconSDK {
     }
 
     @NonNull
-    private static cidaasbeaconsdk.Entity.BeaconResult setBeacon(Beacon mBeacon, Region region) {
+    private cidaasbeaconsdk.Entity.BeaconResult setBeacon(Beacon mBeacon, Region region) {
 
         cidaasbeaconsdk.Entity.BeaconResult beacon = new cidaasbeaconsdk.Entity.BeaconResult();
         if (mBeacon != null) {
@@ -277,7 +279,7 @@ public class BeaconSDK {
                 beacon.setMajor(region.getId2().toString());
             if (region.getId3() != null)
                 beacon.setMinor(region.getId3().toString());
-            Timber.d("Manager", "setBeacon: " + region.toString());
+            logger.addRecordToLog("Manager  setBeacon: " + region.toString());
         }
         return beacon;
     }
@@ -344,6 +346,7 @@ public class BeaconSDK {
                 errorEntity = new ErrorEntity();
                 errorEntity.setStatus(417);
                 errorEntity.setSuccess(false);
+                logger.addRecordToLog("Please make sure you enabled your Internet / GPS / Bluetooth");
                 errorEntity.setMessage("Please make sure you enabled your Internet / GPS / Bluetooth");
                 mBeaconEvents.onError(errorEntity);
             }
@@ -362,9 +365,9 @@ public class BeaconSDK {
     private void setBeaconList(List<CategoryResponse> beaconList, String sub, String access_token) {
         if (beaconManager != null && beaconManager.isBound(beaconConsumer)) {
             addMonitoringNotifier(beaconList, sub, access_token);
-            Timber.d(TAG, "startBeaconMonitoring: is bound");
+            logger.addRecordToLog("startBeaconMonitoring: is bound");
         } else {
-            Timber.d(TAG, "startBeaconMonitoring: not bound");
+            logger.addRecordToLog("startBeaconMonitoring: not bound");
             setUpConsumer(beaconList, sub, access_token);
         }
     }
@@ -401,7 +404,7 @@ public class BeaconSDK {
 
 
     public void setURLFile(AssetManager asset, String fileName) {
-        logger.addRecordToLog("file name :"+fileName);
+        logger.addRecordToLog("file name :" + fileName);
         assetManager = asset;
         configurationFileName = fileName;
         SDKEntity.SDKEntityInstance.readInputs(assetManager, configurationFileName, mContext);
@@ -460,6 +463,7 @@ public class BeaconSDK {
                             };
                             runnable.run();
                             if (isExcecute) {
+                                logger.addRecordToLog("beacon emit called " + SDKEntity.SDKEntityInstance.getBaseUrl());
                                 isExcecute = false;
                                 serviceModel.updateBeacon(access_token, beaconEmitRequest, SDKEntity.SDKEntityInstance.getBaseUrl());
                             }
@@ -474,16 +478,17 @@ public class BeaconSDK {
                         id1 = Identifier.parse(beaconList.get(i).getUniqueId()[j]);
                         Region region = new Region(UUID.randomUUID().toString(), id1, null, null);
                         try {
+                            logger.addRecordToLog("region while registering " + region.toString());
                             beaconManager.startMonitoringBeaconsInRegion(region);
                             beaconManager.startRangingBeaconsInRegion(region);
                         } catch (Exception ex) {
-                            Timber.d("startMonitoringBeaconsInRegion" + ex.getMessage());
+                            logger.addRecordToLog("startMonitoringBeaconsInRegion" + ex.getMessage());
                         }
                     }
                 }
             }
         } catch (Exception ex) {
-            Timber.d(ex.getMessage());
+            logger.addRecordToLog(ex.getMessage());
         }
 
     }
@@ -503,6 +508,11 @@ public class BeaconSDK {
         deviceLocation.setMinor(firstBeacon.getId3().toString());
         deviceLocation.setUniqueId(firstBeacon.getId1().toString());
         beaconEmitRequest.setBeacon(deviceLocation);
+        try {
+            logger.addRecordToLog(new ObjectMapper().writeValueAsString(beaconEmitRequest));
+        } catch (Exception e) {
+            logger.addRecordToLog(e.getMessage());
+        }
         return beaconEmitRequest;
     }
 
@@ -573,7 +583,7 @@ public class BeaconSDK {
                         }
                         sharedPref.setLat(String.valueOf(currentLatitude));
                         sharedPref.setLon(String.valueOf(currentLongitude));
-                        Timber.d("lat " + currentLatitude + " lon " + currentLongitude);
+                        logger.addRecordToLog("lat " + currentLatitude + " lon " + currentLongitude);
                         try {
                             LocationServices.GeofencingApi.addGeofences(
                                     mGoogleApiClient,
@@ -595,10 +605,10 @@ public class BeaconSDK {
 
                         } catch (SecurityException securityException) {
                             // Catch exception generated if the app does not use ACCESS_FINE_LOCATION permission.
-                            logger.addRecordToLog("Error");
+                            logger.addRecordToLog("Error " + securityException.getMessage());
                         }
                     } catch (Exception ex) {
-
+                        logger.addRecordToLog(ex.getMessage());
                     }
 
                 }
@@ -680,7 +690,7 @@ public class BeaconSDK {
                     mGeofenceList.add(fence);
 
                 } catch (Exception e) {
-
+                    logger.addRecordToLog(e.getMessage());
                 }
 
             }

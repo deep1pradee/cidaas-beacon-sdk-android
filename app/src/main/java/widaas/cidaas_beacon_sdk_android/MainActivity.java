@@ -24,7 +24,9 @@ import cidaasbeaconsdk.BeaconSDK;
 import cidaasbeaconsdk.Entity.BeaconEvents;
 import cidaasbeaconsdk.Entity.BeaconResult;
 import cidaasbeaconsdk.Entity.CategoryResponse;
+import cidaasbeaconsdk.Entity.CategoryResponseEntity;
 import cidaasbeaconsdk.Entity.ErrorEntity;
+import cidaasbeaconsdk.Entity.Result;
 import timber.log.Timber;
 
 public class MainActivity extends AppCompatActivity implements BeaconEvents {
@@ -49,9 +51,10 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
 
 
 
+
         beaconMonitor.setURLFile(getAssets(), "properties.xml");
         beaconMonitor.setBeaconLayout("m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24,d:25-25");
-        /*beaconMonitor.getBeaconUUIDs(new Result<CategoryResponseEntity>() {
+        beaconMonitor.getBeaconUUIDs(new Result<CategoryResponseEntity>() {
             @Override
             public void onSuccess(CategoryResponseEntity result) {
                 model=result.getData();
@@ -62,7 +65,7 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
             public void onError(ErrorEntity errorEntity) {
                 Toast.makeText(MainActivity.this, errorEntity.getMessage(), Toast.LENGTH_SHORT).show();
             }
-        });*/
+        });
         if (model != null && model.size() > 0) {
             for (int i = 0; i < model.size(); i++) {
                 Timber.d("MainActivity", "onCreate: " + model.get(i));

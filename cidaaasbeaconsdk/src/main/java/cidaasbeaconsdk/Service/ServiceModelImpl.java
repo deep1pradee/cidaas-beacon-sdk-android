@@ -10,12 +10,12 @@ import cidaasbeaconsdk.Entity.ProximityListReponse;
 import cidaasbeaconsdk.Entity.ProximityListRequest;
 import cidaasbeaconsdk.Entity.Result;
 import cidaasbeaconsdk.Helper.BeaconHelper;
+import cidaasbeaconsdk.Helper.Logger;
 import cidaasbeaconsdk.SDKEntity;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-import timber.log.Timber;
 
 import static cidaasbeaconsdk.Helper.BeaconHelper.BEACON_EMIT_SERVICE;
 import static cidaasbeaconsdk.Helper.BeaconHelper.CONTENT_TYPE_JSON;
@@ -23,6 +23,8 @@ import static cidaasbeaconsdk.Helper.BeaconHelper.LOCATION_EMIT_SERVICE;
 import static cidaasbeaconsdk.Helper.BeaconHelper.LOCATION_LIST_SERVICE;
 
 public class ServiceModelImpl implements ServiceModel {
+    Logger logger;
+
     @Override
     public void getDefaultConfig(String url, final Result<CategoryResponseEntity> responseEntityResult) {
         try {
@@ -33,8 +35,10 @@ public class ServiceModelImpl implements ServiceModel {
                         @Override
                         public void onResponse(Call<CategoryResponseEntity> call, Response<CategoryResponseEntity> response) {
                             if (response.isSuccessful()) {
+                                logger.addRecordToLog("getDefaultConfig " + response.isSuccessful());
                                 responseEntityResult.onSuccess(response.body());
                             } else {
+                                logger.addRecordToLog("getDefaultConfig " + response.isSuccessful() + " code " + response.code());
                                 responseEntityResult.onSuccess(BeaconHelper.getUUID());
                             }
                         }
@@ -42,9 +46,11 @@ public class ServiceModelImpl implements ServiceModel {
                         @Override
                         public void onFailure(Call<CategoryResponseEntity> call, Throwable t) {
                             responseEntityResult.onSuccess(BeaconHelper.getUUID());
+                            logger.addRecordToLog("getDefaultConfig " + t.getMessage());
                         }
                     });
         } catch (Exception ex) {
+            logger.addRecordToLog(ex.getMessage());
             ErrorEntity errorEntity = new ErrorEntity();
             errorEntity.setStatus(500);
             errorEntity.setSuccess(false);
@@ -63,11 +69,11 @@ public class ServiceModelImpl implements ServiceModel {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 if (response.isSuccessful()) {
-                    Timber.d(response.isSuccessful() + " Response ");
+                    logger.addRecordToLog(response.isSuccessful() + " updateBeacon Response ");
                 }
                 // responseBodyResult.onSuccess(response.body());
                 else {
-                    Timber.d(response.code() + " Response failed code");
+                    logger.addRecordToLog(response.code() + "updateBeacon Response failed code");
                     ErrorEntity errorEntity = new ErrorEntity();
                     errorEntity.setStatus(500);
                     errorEntity.setSuccess(false);
@@ -82,7 +88,7 @@ public class ServiceModelImpl implements ServiceModel {
                 errorEntity.setStatus(500);
                 errorEntity.setSuccess(false);
                 errorEntity.setMessage(t.getMessage());
-                Timber.d(t.getMessage() + " Response failed code");
+                logger.addRecordToLog(t.getMessage() + " updateBeacon Response failed code");
                 // responseBodyResult.onError(errorEntity);
             }
         });
@@ -97,12 +103,14 @@ public class ServiceModelImpl implements ServiceModel {
                              @Override
                              public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                                  if (response.isSuccessful())
-                                     Timber.d(response.isSuccessful() + " REsponse");
+                                     logger.addRecordToLog(response.isSuccessful() + "update location REsponse");
+                                 else
+                                     logger.addRecordToLog(response.code() + " update location failed");
                              }
 
                              @Override
                              public void onFailure(Call<ResponseBody> call, Throwable t) {
-                                 Timber.d(t.getMessage() + " REsponse");
+                                 logger.addRecordToLog(t.getMessage() + "update location REsponse");
                              }
                          }
                 );
@@ -117,7 +125,7 @@ public class ServiceModelImpl implements ServiceModel {
                     @Override
                     public void onResponse(Call<ProximityListReponse> call, Response<ProximityListReponse> response) {
                         if (response.isSuccessful()) {
-                            Timber.d(response.isSuccessful() + " REsponse");
+                            logger.addRecordToLog(response.isSuccessful() + " getProximityList REsponse");
                             if (response.body() != null && response.body().getData() != null)
                                 responseEntityResult.onSuccess(response.body().getData());
                         }
@@ -130,6 +138,8 @@ public class ServiceModelImpl implements ServiceModel {
                         errorEntity.setSuccess(false);
                         errorEntity.setMessage("");
                         responseEntityResult.onError(errorEntity);
+                        logger.addRecordToLog(t.getMessage() + " getProximityList REsponse");
+
                     }
                 });
 
