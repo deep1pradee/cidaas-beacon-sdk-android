@@ -35,7 +35,7 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
     TextView txtview;
     private List<CategoryResponse> model;
     private String sub="1d693bd7-263d-4dd4-94e0-708fbab2ab7f";
-    private String access_token="eyJhbGciOiJSUzI1NiIsImtpZCI6IjEwMjM2ZWZiLWRlMjEtNDI5Mi04ZDRlLTRmZGIxNjhhZDg4ZSJ9.eyJzaWQiOiJkOWFlMjg0ZS0xNjk5LTQzZWMtYThkNS0wNGZmNzJjZWQwYTgiLCJzdWIiOiIxZDY5M2JkNy0yNjNkLTRkZDQtOTRlMC03MDhmYmFiMmFiN2YiLCJpc3ViIjoiMzdjOGM2MzMtYWVkNC00ZmY1LWExMDUtYTNiY2VkYmEyNGE1IiwiYXVkIjoiNGQ1ZTZlMjAtOTM0Ny00MjU1LTk3OTAtNWI3MTk2ODQzMTAzIiwiaWF0IjoxNTM4ODg5NTM2LCJhdXRoX3RpbWUiOjE1Mzg4ODk1MzYsImlzcyI6Imh0dHBzOi8vbmlnaHRseWJ1aWxkLmNpZGFhcy5kZSIsImp0aSI6IjRhNTAxNjNhLWNkMDktNGFhMC1iYzY2LTM2ZDRjNWNkYjY3MSIsIm5vbmNlIjoiMTIzNDUiLCJzY29wZXMiOlsib3BlbmlkIl0sInJvbGVzIjpbIlVTRVIiXSwiZ3JvdXBzIjpbeyJncm91cElkIjoiQ0lEQUFTX0FETUlOUyIsInJvbGVzIjpbIlNFQ09OREFSWV9BRE1JTiJdfV0sImV4cCI6MTUzODk3NTkzNiwiZW1haWwiOiJzdXByYWRhcmFvQGdtYWlsLmNvbSIsImdpdmVuX25hbWUiOiJza3JhbyJ9.jlaHzSGQEb3NuoV0ml-mi5vFJ5MzgzzIbWMhqu1ZoAWqo6jAeNSHCoceia15f9P2VbbufszseMF_O20GfoZN4K4LcZ0qx9jTzgskgf3qOClFXHpMy7IVJSXDKEEhgU1ij815AHFoPRcsmy4Di71VAkq7JrbTW0qVcj-Plc2gFB4";
+    private String access_token="eyJhbGciOiJSUzI1NiIsImtpZCI6IjEwMjM2ZWZiLWRlMjEtNDI5Mi04ZDRlLTRmZGIxNjhhZDg4ZSJ9.eyJzaWQiOiI2MjM1ZjVkNi1mYTIyLTQxYTctYWRhMS05OGNhZTllZGViMDAiLCJzdWIiOiIxZDY5M2JkNy0yNjNkLTRkZDQtOTRlMC03MDhmYmFiMmFiN2YiLCJpc3ViIjoiMzdjOGM2MzMtYWVkNC00ZmY1LWExMDUtYTNiY2VkYmEyNGE1IiwiYXVkIjoiNGQ1ZTZlMjAtOTM0Ny00MjU1LTk3OTAtNWI3MTk2ODQzMTAzIiwiaWF0IjoxNTM5MDgwNTkyLCJhdXRoX3RpbWUiOjE1MzkwODA1OTIsImlzcyI6Imh0dHBzOi8vbmlnaHRseWJ1aWxkLmNpZGFhcy5kZSIsImp0aSI6IjA4NjkzN2I3LTIwZDAtNGJlYS04NzViLTIxZGJlYTY0M2U2MSIsIm5vbmNlIjoiMTIzNDUiLCJzY29wZXMiOlsib3BlbmlkIl0sInJvbGVzIjpbIlVTRVIiXSwiZ3JvdXBzIjpbeyJncm91cElkIjoiQ0lEQUFTX0FETUlOUyIsInJvbGVzIjpbIlNFQ09OREFSWV9BRE1JTiJdfV0sImV4cCI6MTUzOTE2Njk5MiwiZW1haWwiOiJzdXByYWRhcmFvQGdtYWlsLmNvbSIsImdpdmVuX25hbWUiOiJza3JhbyJ9.jp1CVhbKcsJZ1eU2dLhGc_lHJHaHPZypuJzkoG8kNKP2pNZp1mCTFSbSF2CXMDF0m1w0ur4KCWu2_cxmSPTI46fMpaAynA1JTyo5AZBJy4iKRomITu3bKQA-eDCZcrlGnjjgUp9_C_S5emFlFxG8Bc2HbgHtCesw78SCsWa74Dg";
     private static final int REQUEST = 112;
 
     @Override
@@ -58,7 +58,7 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
             @Override
             public void onSuccess(CategoryResponseEntity result) {
                 model=result.getData();
-                beaconMonitor.startBeaconMonitoring(model,sub,access_token);
+                beaconMonitor.startBeaconMonitoringAndRanging(model,sub,access_token);
             }
 
             @Override

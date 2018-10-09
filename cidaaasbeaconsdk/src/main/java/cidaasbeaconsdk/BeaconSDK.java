@@ -39,6 +39,7 @@ import org.altbeacon.beacon.service.RangedBeacon;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -123,20 +124,21 @@ public class BeaconSDK {
             GeofenceTransitionsIntentService.regionCallBack = new RegionCallBack() {
                 @Override
                 public void OnEntered(String[] triggeringIds) {
+                    sharedPref.setSessionId(UUID.randomUUID().toString());
                     resumeLocationUpdates();
                     for (int i = 0; i < triggeringIds.length; i++) {
                         sharedPref.setLocationIds(triggeringIds[i]);
                     }
                     mBeaconEvents.didEnterGeoRegion();
                     StartLocEmitService("STARTED");
-                    logger.addRecordToLog("OnEntered: " + triggeringIds.length);
+                    logger.addRecordToLog("STARTED " + triggeringIds.length);
                 }
 
                 @Override
                 public void OnExited() {
                     mBeaconEvents.didExitGeoRegion();
                     StartLocEmitService("ENDED");
-                    logger.addRecordToLog("OnExited: ");
+                    logger.addRecordToLog("ENDED ");
                 }
             };
         } else {
@@ -254,7 +256,7 @@ public class BeaconSDK {
                 mGoogleApiClient.connect();
             }
         } catch (Exception ex) {
-            logger.addRecordToLog("unbind exception "+ex.getMessage());
+            logger.addRecordToLog("unbind exception " + ex.getMessage());
         }
 
     }
@@ -304,7 +306,7 @@ public class BeaconSDK {
         RangedBeacon.setSampleExpirationMilliseconds(milliseconds);
     }
 
-    public void startBeaconMonitoring(final List<CategoryResponse> beaconList, final String sub, final String access_token) {
+    public void startBeaconMonitoringAndRanging(final List<CategoryResponse> beaconList, final String sub, final String access_token) {
         ErrorEntity errorEntity;
 
         if (/*isBTOn() && */isNetworkConnected() && isGPSON()) {
@@ -438,7 +440,6 @@ public class BeaconSDK {
                 @Override
                 public void didEnterRegion(Region region) {
                     if (mBeaconEvents != null) {
-                        sharedPref.setSessionId(region.getUniqueId());
                         mBeaconEvents.didEnterRegion(setBeacon(null, region));
                     }
                 }
@@ -645,12 +646,43 @@ public class BeaconSDK {
                 }
             };
 
-   /* private float getDistance(Location location) {
-        Location newLoc = new Location("loc");
-        newLoc.setLatitude(defaultLat);
-        newLoc.setLongitude(defaultLon);
-        return location.distanceTo(newLoc);
-    }*/
+    /* private float getDistance(Location location) {
+         Location newLoc = new Location("loc");
+         newLoc.setLatitude(defaultLat);
+         newLoc.setLongitude(defaultLon);
+         return location.distanceTo(newLoc);
+     }*/
+    public void stopMonitoringAndRanging() {
+        Collection<Region> monitoringList = beaconManager.getMonitoredRegions();
+        if (monitoringList != null && monitoringList.size() > 0) {
+            try {
+                Iterator<Region> iterator = monitoringList.iterator();
+                // while loop
+                while (iterator.hasNext()) {
+                    beaconManager.stopMonitoringBeaconsInRegion(iterator.next());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        Collection<Region> rangedRegionList = beaconManager.getRangedRegions();
+        if (rangedRegionList != null && rangedRegionList.size() > 0) {
+            try {
+                Iterator<Region> iterator = rangedRegionList.iterator();
+                // while loop
+                while (iterator.hasNext()) {
+                    beaconManager.stopRangingBeaconsInRegion(iterator.next());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        if (GeofenceTransitionsIntentService.regionCallBack != null) {
+            logger.addRecordToLog("Manually stopped monitoring & ranging !! ");
+            GeofenceTransitionsIntentService.regionCallBack.OnExited();
+        }
+
+    }
 
     private cidaasbeaconsdk.Entity.LocationRequest getLocationRequest(double currentLatitude, double currentLongitude, String status) {
         Set<String> list = sharedPref.getLocationIds();
