@@ -32,24 +32,18 @@ public class GeofenceTransitionsIntentService extends IntentService {
         logger.addRecordToLog("onHandleIntent");
         GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(intent);
         if (geofencingEvent.hasError()) {
-            //String errorMessage = GeofenceErrorMessages.getErrorString(this,
-            //      geofencingEvent.getErrorCode());
             logger.addRecordToLog("Goefencing Error " + geofencingEvent.getErrorCode());
             return;
         }
-
         // Get the transition type.
         int geofenceTransition = geofencingEvent.getGeofenceTransition();
         triggeringGeofences = geofencingEvent.getTriggeringGeofences();
         ErrorEntity errorEntity = new ErrorEntity();
         errorEntity.setStatus(417);
         errorEntity.setSuccess(false);
-        logger.addRecordToLog("geofenceTransition = " + geofenceTransition + " Enter : " + Geofence.GEOFENCE_TRANSITION_ENTER + "Exit : " + Geofence.GEOFENCE_TRANSITION_EXIT);
+        logger.addRecordToLog("geofenceTransition = " + geofenceTransition + " Enter : " + Geofence.GEOFENCE_TRANSITION_ENTER + " Exit : " + Geofence.GEOFENCE_TRANSITION_EXIT);
         if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER || geofenceTransition == Geofence.GEOFENCE_TRANSITION_DWELL) {
-            logger.addRecordToLog("onHandleIntent: Entered Entered the Location " + triggeringGeofences.size());
-            /*errorEntity.setMessage("Entered the Location");
-            BeaconSDK.mBeaconEvents.onError(errorEntity);
-            BeaconSDK.mBeaconEvents.didEnterGeoRegion();*/
+            logger.addRecordToLog("onHandleIntent: Entered the Location " + triggeringGeofences.size());
             if (triggeringGeofences != null && triggeringGeofences.size() > 0) {
                 list = new String[triggeringGeofences.size()];
                 for (int i = 0; i < triggeringGeofences.size(); i++) {
@@ -58,7 +52,6 @@ public class GeofenceTransitionsIntentService extends IntentService {
             }
             if (regionCallBack != null) {
                 regionCallBack.OnEntered(getTriggeringIds());
-
             }
 
 

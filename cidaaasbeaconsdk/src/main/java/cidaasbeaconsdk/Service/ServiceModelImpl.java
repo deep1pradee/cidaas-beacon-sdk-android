@@ -1,6 +1,9 @@
 package cidaasbeaconsdk.Service;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import cidaasbeaconsdk.Entity.BeaconEmitRequest;
 import cidaasbeaconsdk.Entity.CategoryResponseEntity;
 import cidaasbeaconsdk.Entity.ErrorEntity;
@@ -98,12 +101,17 @@ public class ServiceModelImpl implements ServiceModel {
     public void updateLocation(String access_token, LocationRequest deviceLocation, String url) {
         Services services = new Services();
         IService iService = services.createClient(url);
+        try {
+            logger.addRecordToLog("Location update REquest :"+new ObjectMapper().writeValueAsString(deviceLocation));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
         iService.locationEmit(url + LOCATION_EMIT_SERVICE, CONTENT_TYPE_JSON, access_token, deviceLocation)
                 .enqueue(new Callback<ResponseBody>() {
                              @Override
                              public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                                  if (response.isSuccessful())
-                                     logger.addRecordToLog(response.isSuccessful() + "update location REsponse");
+                                     logger.addRecordToLog(response.isSuccessful() + " update location REsponse");
                                  else
                                      logger.addRecordToLog(response.code() + " update location failed");
                              }

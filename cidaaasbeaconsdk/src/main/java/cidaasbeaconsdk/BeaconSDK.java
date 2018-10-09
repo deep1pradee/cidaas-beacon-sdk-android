@@ -136,8 +136,6 @@ public class BeaconSDK {
                 public void OnExited() {
                     mBeaconEvents.didExitGeoRegion();
                     StartLocEmitService("ENDED");
-                    if (mGoogleApiClient != null && locationListener != null)
-                        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, locationListener);
                     logger.addRecordToLog("OnExited: ");
                 }
             };
@@ -256,7 +254,7 @@ public class BeaconSDK {
                 mGoogleApiClient.connect();
             }
         } catch (Exception ex) {
-            logger.addRecordToLog(ex.getMessage());
+            logger.addRecordToLog("unbind exception "+ex.getMessage());
         }
 
     }
@@ -677,6 +675,8 @@ public class BeaconSDK {
         if (status.equalsIgnoreCase("ENDED")) {
             sharedPref.removeLocationId();
             GeofenceTransitionsIntentService.list = new String[0];
+            if (mGoogleApiClient != null && locationListener != null)
+                LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, locationListener);
         }
         return deviceLocation;
     }
