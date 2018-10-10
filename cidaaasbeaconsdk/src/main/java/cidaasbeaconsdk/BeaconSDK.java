@@ -137,8 +137,6 @@ public class BeaconSDK {
 
                 @Override
                 public void OnExited() {
-                    sharedPref.removeLocationId();
-                    sharedPref.removeSessionId();
                     mBeaconEvents.didExitGeoRegion();
                     StartLocEmitService("ENDED");
                     logger.addRecordToLog("ENDED ");
@@ -589,7 +587,7 @@ public class BeaconSDK {
                                 logger.addRecordToLog("onLocationChanged " + location.getLatitude() + " " + location.getLongitude());
                             }
                         };
-                        // resumeLocationUpdates();
+                         resumeLocationUpdates();
                         if (location == null) {
                             resumeLocationUpdates();
                             // LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, locationListener);
@@ -712,6 +710,7 @@ public class BeaconSDK {
         //once ended remove all the ids from shared preference
         if (status.equalsIgnoreCase("ENDED")) {
             sharedPref.removeLocationId();
+            sharedPref.removeSessionId();
             GeofenceTransitionsIntentService.list = new String[0];
             if (mGoogleApiClient != null && locationListener != null)
                 LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, locationListener);
