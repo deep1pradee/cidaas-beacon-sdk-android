@@ -709,7 +709,7 @@ public class BeaconSDK {
         deviceLocation.setSub(sharedPref.getSub());
         //once ended remove all the ids from shared preference
         if (status.equalsIgnoreCase("ENDED")) {
-            sharedPref.removeLocationId();
+           // sharedPref.removeLocationId();
             sharedPref.removeSessionId();
             GeofenceTransitionsIntentService.list = new String[0];
             if (mGoogleApiClient != null && locationListener != null)

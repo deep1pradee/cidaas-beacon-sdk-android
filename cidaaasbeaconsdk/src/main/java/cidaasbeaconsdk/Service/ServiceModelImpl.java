@@ -101,27 +101,35 @@ public class ServiceModelImpl implements ServiceModel {
     public void updateLocation(String access_token, LocationRequest deviceLocation, String url) {
         Services services = new Services();
         IService iService = services.createClient(url);
-        try {
-            logger.addRecordToLog("Location update REquest :"+new ObjectMapper().writeValueAsString(deviceLocation));
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
-        iService.locationEmit(url + LOCATION_EMIT_SERVICE, CONTENT_TYPE_JSON, access_token, deviceLocation)
-                .enqueue(new Callback<ResponseBody>() {
-                             @Override
-                             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                                 if (response.isSuccessful())
-                                     logger.addRecordToLog(response.isSuccessful() + " update location REsponse");
-                                 else
-                                     logger.addRecordToLog(response.code() + " update location failed");
-                             }
+        if(deviceLocation!=null&&deviceLocation.getSessionId()!=null&&!deviceLocation.getSessionId().equalsIgnoreCase(""))
+        {
+            try {
+                logger.addRecordToLog("Location update REquest :"+new ObjectMapper().writeValueAsString(deviceLocation));
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
+            iService.locationEmit(url + LOCATION_EMIT_SERVICE, CONTENT_TYPE_JSON, access_token, deviceLocation)
+                    .enqueue(new Callback<ResponseBody>() {
+                                 @Override
+                                 public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                                     if (response.isSuccessful())
+                                         logger.addRecordToLog(response.isSuccessful() + " update location REsponse");
+                                     else
+                                         logger.addRecordToLog(response.code() + " update location failed");
+                                 }
 
-                             @Override
-                             public void onFailure(Call<ResponseBody> call, Throwable t) {
-                                 logger.addRecordToLog(t.getMessage() + "update location REsponse");
+                                 @Override
+                                 public void onFailure(Call<ResponseBody> call, Throwable t) {
+                                     logger.addRecordToLog(t.getMessage() + "update location REsponse");
+                                 }
                              }
-                         }
-                );
+                    );
+        }
+        else
+        {
+            logger.addRecordToLog("No session id");
+        }
+
     }
 
     @Override
