@@ -271,6 +271,9 @@ public class BeaconSDK {
         logger.addRecordToLog("RESUMING LOCATION UPDATES");
         if (mGoogleApiClient != null && mLocationRequest != null && locationListener != null)
             LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, locationListener);
+        else {
+            logger.addRecordToLog("resumeLocationUpdates something is null");
+        }
     }
 
     @NonNull
