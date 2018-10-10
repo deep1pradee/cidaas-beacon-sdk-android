@@ -80,6 +80,7 @@ public class BeaconSDK {
     private String configurationFileName;
     SharedPref sharedPref;
     Logger logger;
+    public static boolean isLogEnable = false;
     com.google.android.gms.location.LocationListener locationListener;
     /*12.919471096259466, */
     //   double currentLatitude = 12.919564999999999, currentLongitude = 77.6683352;
@@ -269,7 +270,7 @@ public class BeaconSDK {
 
     private void resumeLocationUpdates() {
         logger.addRecordToLog("RESUMING LOCATION UPDATES");
-        if (mGoogleApiClient != null && mLocationRequest != null && locationListener != null)
+        if (mGoogleApiClient != null &&mGoogleApiClient.isConnected()&& mLocationRequest != null && locationListener != null)
             LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, locationListener);
         else {
             logger.addRecordToLog("resumeLocationUpdates something is null");
@@ -587,10 +588,8 @@ public class BeaconSDK {
                                 if (sharedPref.getSessionId() != null && !sharedPref.getSessionId().equalsIgnoreCase("")) {
                                     StartLocEmitService("IN_PROGRESS");
                                 }
-                                logger.addRecordToLog("onLocationChanged " + location.getLatitude() + " " + location.getLongitude());
                             }
                         };
-                         resumeLocationUpdates();
                         if (location == null) {
                             resumeLocationUpdates();
                             // LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, locationListener);
@@ -599,10 +598,8 @@ public class BeaconSDK {
                             currentLatitude = location.getLatitude();
                             currentLongitude = location.getLongitude();
                             logger.addRecordToLog(currentLatitude + " WORKS " + currentLongitude);
-
-                            //createGeofences(currentLatitude, currentLongitude);
-                            //registerGeofences(mGeofenceList);
                         }
+                        resumeLocationUpdates();
                         sharedPref.setLat(String.valueOf(currentLatitude));
                         sharedPref.setLon(String.valueOf(currentLongitude));
                         logger.addRecordToLog("lat " + currentLatitude + " lon " + currentLongitude);
@@ -689,6 +686,12 @@ public class BeaconSDK {
             GeofenceTransitionsIntentService.regionCallBack.OnExited();
         }
 
+        if (mGoogleApiClient != null && mGoogleApiClient.isConnected() && mGeofenceList != null && mGeofenceList.size() > 0) {
+            if (locationListener != null)
+                LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, locationListener);
+            LocationServices.GeofencingApi.removeGeofences(mGoogleApiClient, getGeofencePendingIntent());
+        }
+
     }
 
     private cidaasbeaconsdk.Entity.LocationRequest getLocationRequest(double currentLatitude, double currentLongitude, String status) {
@@ -712,7 +715,7 @@ public class BeaconSDK {
         deviceLocation.setSub(sharedPref.getSub());
         //once ended remove all the ids from shared preference
         if (status.equalsIgnoreCase("ENDED")) {
-           // sharedPref.removeLocationId();
+            // sharedPref.removeLocationId();
             sharedPref.removeSessionId();
             GeofenceTransitionsIntentService.list = new String[0];
             if (mGoogleApiClient != null && locationListener != null)
