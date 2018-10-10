@@ -124,23 +124,30 @@ public class BeaconSDK {
             GeofenceTransitionsIntentService.regionCallBack = new RegionCallBack() {
                 @Override
                 public void OnEntered(String[] triggeringIds) {
-                    sharedPref.setSessionId(UUID.randomUUID().toString());
-                    for (int i = 0; i < triggeringIds.length; i++) {
-                        sharedPref.setLocationIds(triggeringIds[i]);
+                    if (sharedPref.getSessionId() != null && !sharedPref.getSessionId().equalsIgnoreCase("")) {
+                        sharedPref.setSessionId(UUID.randomUUID().toString());
+                        for (int i = 0; i < triggeringIds.length; i++) {
+                            sharedPref.setLocationIds(triggeringIds[i]);
+                        }
+                        mBeaconEvents.didEnterGeoRegion();
+                        StartLocEmitService("STARTED");
+                        resumeLocationUpdates();
+                        // startGeoFencing();
+                        logger.addRecordToLog("Size of existing geo fences " + getGeofencingRequest().getGeofences().size());
+                        logger.addRecordToLog("STARTED " + triggeringIds.length);
+                    } else {
+                        logger.addRecordToLog("new region detected when already in region!");
                     }
-                    mBeaconEvents.didEnterGeoRegion();
-                    StartLocEmitService("STARTED");
-                    resumeLocationUpdates();
-                    // startGeoFencing();
-                    logger.addRecordToLog("Size of existing geo fences " + getGeofencingRequest().getGeofences().size());
-                    logger.addRecordToLog("STARTED " + triggeringIds.length);
+
                 }
 
                 @Override
                 public void OnExited() {
-                    mBeaconEvents.didExitGeoRegion();
-                    StartLocEmitService("ENDED");
-                    logger.addRecordToLog("ENDED ");
+                    if (sharedPref.getSessionId() != null && !sharedPref.getSessionId().equalsIgnoreCase("")) {
+                        mBeaconEvents.didExitGeoRegion();
+                        StartLocEmitService("ENDED");
+                        logger.addRecordToLog("ENDED ");
+                    }
                 }
             };
         } else {
@@ -270,7 +277,7 @@ public class BeaconSDK {
 
     private void resumeLocationUpdates() {
         logger.addRecordToLog("RESUMING LOCATION UPDATES");
-        if (mGoogleApiClient != null &&mGoogleApiClient.isConnected()&& mLocationRequest != null && locationListener != null)
+        if (mGoogleApiClient != null && mGoogleApiClient.isConnected() && mLocationRequest != null && locationListener != null)
             LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, locationListener);
         else {
             logger.addRecordToLog("resumeLocationUpdates something is null");
