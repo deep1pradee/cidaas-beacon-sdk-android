@@ -17,7 +17,6 @@ import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -125,17 +124,21 @@ public class BeaconSDK {
                 @Override
                 public void OnEntered(String[] triggeringIds) {
                     sharedPref.setSessionId(UUID.randomUUID().toString());
-                    resumeLocationUpdates();
                     for (int i = 0; i < triggeringIds.length; i++) {
                         sharedPref.setLocationIds(triggeringIds[i]);
                     }
                     mBeaconEvents.didEnterGeoRegion();
                     StartLocEmitService("STARTED");
+                    resumeLocationUpdates();
+                    // startGeoFencing();
+                    logger.addRecordToLog("Size of existing geo fences " + getGeofencingRequest().getGeofences().size());
                     logger.addRecordToLog("STARTED " + triggeringIds.length);
                 }
 
                 @Override
                 public void OnExited() {
+                    sharedPref.removeLocationId();
+                    sharedPref.removeSessionId();
                     mBeaconEvents.didExitGeoRegion();
                     StartLocEmitService("ENDED");
                     logger.addRecordToLog("ENDED ");
@@ -297,7 +300,7 @@ public class BeaconSDK {
                 beacon.setMajor(region.getId2().toString());
             if (region.getId3() != null)
                 beacon.setMinor(region.getId3().toString());
-            logger.addRecordToLog("Manager  setBeacon: " + region.toString());
+            // logger.addRecordToLog("Manager  setBeacon: " + region.toString());
         }
         return beacon;
     }
@@ -383,9 +386,9 @@ public class BeaconSDK {
     private void setBeaconList(List<CategoryResponse> beaconList, String sub, String access_token) {
         if (beaconManager != null && beaconManager.isBound(beaconConsumer)) {
             addMonitoringNotifier(beaconList, sub, access_token);
-            logger.addRecordToLog("startBeaconMonitoring: is bound");
+            //  logger.addRecordToLog("startBeaconMonitoring: is bound");
         } else {
-            logger.addRecordToLog("startBeaconMonitoring: not bound");
+            //  logger.addRecordToLog("startBeaconMonitoring: not bound");
             setUpConsumer(beaconList, sub, access_token);
         }
     }
@@ -480,7 +483,7 @@ public class BeaconSDK {
                             };
                             runnable.run();
                             if (isExcecute) {
-                                logger.addRecordToLog("beacon emit called " + SDKEntity.SDKEntityInstance.getBaseUrl());
+                                //   logger.addRecordToLog("beacon emit called " + SDKEntity.SDKEntityInstance.getBaseUrl());
                                 isExcecute = false;
                                 serviceModel.updateBeacon(access_token, beaconEmitRequest, SDKEntity.SDKEntityInstance.getBaseUrl());
                             }
@@ -495,11 +498,11 @@ public class BeaconSDK {
                         id1 = Identifier.parse(beaconList.get(i).getUniqueId()[j]);
                         Region region = new Region(UUID.randomUUID().toString(), id1, null, null);
                         try {
-                            logger.addRecordToLog("region while registering " + region.toString());
+                            //    logger.addRecordToLog("region while registering " + region.toString());
                             beaconManager.startMonitoringBeaconsInRegion(region);
                             beaconManager.startRangingBeaconsInRegion(region);
                         } catch (Exception ex) {
-                            logger.addRecordToLog("startMonitoringBeaconsInRegion" + ex.getMessage());
+                            //  logger.addRecordToLog("startMonitoringBeaconsInRegion" + ex.getMessage());
                         }
                     }
                 }
@@ -526,9 +529,9 @@ public class BeaconSDK {
         deviceLocation.setUniqueId(firstBeacon.getId1().toString());
         beaconEmitRequest.setBeacon(deviceLocation);
         try {
-            logger.addRecordToLog(new ObjectMapper().writeValueAsString(beaconEmitRequest));
+            //  logger.addRecordToLog(new ObjectMapper().writeValueAsString(beaconEmitRequest));
         } catch (Exception e) {
-            logger.addRecordToLog(e.getMessage());
+            //  logger.addRecordToLog(e.getMessage());
         }
         return beaconEmitRequest;
     }
@@ -580,16 +583,16 @@ public class BeaconSDK {
                             public void onLocationChanged(Location location) {
                                 currentLatitude = location.getLatitude();
                                 currentLongitude = location.getLongitude();
-
-                                StartLocEmitService("IN_PROGRESS");
+                                if (sharedPref.getSessionId() != null && !sharedPref.getSessionId().equalsIgnoreCase("")) {
+                                    StartLocEmitService("IN_PROGRESS");
+                                }
                                 logger.addRecordToLog("onLocationChanged " + location.getLatitude() + " " + location.getLongitude());
                             }
                         };
-                        resumeLocationUpdates();
+                        // resumeLocationUpdates();
                         if (location == null) {
                             resumeLocationUpdates();
                             // LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, locationListener);
-
                         } else {
                             //If everything went fine lets get latitude and longitude
                             currentLatitude = location.getLatitude();
@@ -603,24 +606,7 @@ public class BeaconSDK {
                         sharedPref.setLon(String.valueOf(currentLongitude));
                         logger.addRecordToLog("lat " + currentLatitude + " lon " + currentLongitude);
                         try {
-                            LocationServices.GeofencingApi.addGeofences(
-                                    mGoogleApiClient,
-                                    getGeofencingRequest(),
-                                    getGeofencePendingIntent()
-                            ).setResultCallback(new ResultCallback<Status>() {
-
-                                @Override
-                                public void onResult(Status status) {
-                                    if (status.isSuccess()) {
-                                        logger.addRecordToLog("Saving Geofence");
-
-                                    } else {
-                                        logger.addRecordToLog("Registering geofence failed: " + status.getStatusMessage() +
-                                                " : " + status.getStatusCode());
-                                    }
-                                }
-                            });
-
+                            startGeoFencing();
                         } catch (SecurityException securityException) {
                             // Catch exception generated if the app does not use ACCESS_FINE_LOCATION permission.
                             logger.addRecordToLog("Error " + securityException.getMessage());
@@ -645,6 +631,26 @@ public class BeaconSDK {
 
                 }
             };
+
+    private void startGeoFencing() {
+        LocationServices.GeofencingApi.addGeofences(
+                mGoogleApiClient,
+                getGeofencingRequest(),
+                getGeofencePendingIntent()
+        ).setResultCallback(new ResultCallback<Status>() {
+
+            @Override
+            public void onResult(Status status) {
+                if (status.isSuccess()) {
+                    logger.addRecordToLog("Saving Geofence");
+
+                } else {
+                    logger.addRecordToLog("Registering geofence failed: " + status.getStatusMessage() +
+                            " : " + status.getStatusCode());
+                }
+            }
+        });
+    }
 
     /* private float getDistance(Location location) {
          Location newLoc = new Location("loc");

@@ -79,10 +79,22 @@ public class SharedPref {
         editor.putStringSet(KEY_LOC_ID, locIds);
         editor.apply();
     }
+
     public void removeLocationId() {
         editor.putStringSet(KEY_LOC_ID, new HashSet<String>());
         editor.apply();
     }
+
+    public void removeSessionId() {
+        try {
+            editor.putString(KEY_SESSION_ID, "");
+            editor.apply();
+        } catch (Exception ex) {
+
+        }
+
+    }
+
     public Set<String> getLocationIds() {
         return preferences.getStringSet(KEY_LOC_ID, new HashSet<String>());
     }

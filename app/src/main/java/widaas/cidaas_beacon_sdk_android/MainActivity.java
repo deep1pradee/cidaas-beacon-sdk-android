@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.TextView;
@@ -34,9 +35,10 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 456;
     TextView txtview;
     private List<CategoryResponse> model;
-    private String sub="1d693bd7-263d-4dd4-94e0-708fbab2ab7f";
-    private String access_token="eyJhbGciOiJSUzI1NiIsImtpZCI6IjEwMjM2ZWZiLWRlMjEtNDI5Mi04ZDRlLTRmZGIxNjhhZDg4ZSJ9.eyJzaWQiOiI2MjM1ZjVkNi1mYTIyLTQxYTctYWRhMS05OGNhZTllZGViMDAiLCJzdWIiOiIxZDY5M2JkNy0yNjNkLTRkZDQtOTRlMC03MDhmYmFiMmFiN2YiLCJpc3ViIjoiMzdjOGM2MzMtYWVkNC00ZmY1LWExMDUtYTNiY2VkYmEyNGE1IiwiYXVkIjoiNGQ1ZTZlMjAtOTM0Ny00MjU1LTk3OTAtNWI3MTk2ODQzMTAzIiwiaWF0IjoxNTM5MDgwNTkyLCJhdXRoX3RpbWUiOjE1MzkwODA1OTIsImlzcyI6Imh0dHBzOi8vbmlnaHRseWJ1aWxkLmNpZGFhcy5kZSIsImp0aSI6IjA4NjkzN2I3LTIwZDAtNGJlYS04NzViLTIxZGJlYTY0M2U2MSIsIm5vbmNlIjoiMTIzNDUiLCJzY29wZXMiOlsib3BlbmlkIl0sInJvbGVzIjpbIlVTRVIiXSwiZ3JvdXBzIjpbeyJncm91cElkIjoiQ0lEQUFTX0FETUlOUyIsInJvbGVzIjpbIlNFQ09OREFSWV9BRE1JTiJdfV0sImV4cCI6MTUzOTE2Njk5MiwiZW1haWwiOiJzdXByYWRhcmFvQGdtYWlsLmNvbSIsImdpdmVuX25hbWUiOiJza3JhbyJ9.jp1CVhbKcsJZ1eU2dLhGc_lHJHaHPZypuJzkoG8kNKP2pNZp1mCTFSbSF2CXMDF0m1w0ur4KCWu2_cxmSPTI46fMpaAynA1JTyo5AZBJy4iKRomITu3bKQA-eDCZcrlGnjjgUp9_C_S5emFlFxG8Bc2HbgHtCesw78SCsWa74Dg";
+    private String sub="aa4a0565-f0b6-4afe-ad27-7707c68c5a22";
+    private String access_token="eyJhbGciOiJSUzI1NiIsImtpZCI6IjEwMjM2ZWZiLWRlMjEtNDI5Mi04ZDRlLTRmZGIxNjhhZDg4ZSJ9.eyJzaWQiOiJiMWE2MjBiOC05Yzk4LTQ1MDQtYWZhZS03NGZkZWRmNDIyNjYiLCJzdWIiOiI4YjY4ODQ3My01ZDUzLTQ1NTEtOGVjZC00MzI1ZDY2ZDNhNTkiLCJpc3ViIjoiYWE0YTA1NjUtZjBiNi00YWZlLWFkMjctNzcwN2M2OGM1YTIyIiwiYXVkIjoiNGQ1ZTZlMjAtOTM0Ny00MjU1LTk3OTAtNWI3MTk2ODQzMTAzIiwiaWF0IjoxNTM5MTAzNzEzLCJhdXRoX3RpbWUiOjE1MzkxMDM3MTMsImlzcyI6Imh0dHBzOi8vbmlnaHRseWJ1aWxkLmNpZGFhcy5kZSIsImp0aSI6IjVjYjc1ODA1LWQ2ZmQtNGJkYi05NzEwLTNmMDQ3YzM1ZDM5NCIsIm5vbmNlIjoiMTIzNDUiLCJzY29wZXMiOlsib3BlbmlkIiwicHJvZmlsZSJdLCJyb2xlcyI6WyJVU0VSIl0sImdyb3VwcyI6W10sImV4cCI6MTUzOTE5MDExMywiZW1haWwiOiJzdXByYWRha3Jhb0BnbWFpbC5jb20iLCJnaXZlbl9uYW1lIjoiU3VwcmFkYSJ9.IIYMdkzG_SlOFUsdpU4UPH9ReCvYXSQyzLKYrHh-1Qp_kKZk7AHe-wr5Gz8LW1ld0u-yF6aZzwBbgghdhlmS0cULvIMiWBNBo_JdtvdWQ0PxFHMb5FNT3xrmqR-sVLOVoJpZk63g8nRdpfDKUJNnli0BHAgLQrFAZzY81eViquQ";
     private static final int REQUEST = 112;
+    private static final int MY_PERMISSIONS_REQUEST_READ_FINE_LOCATION = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,8 +50,21 @@ public class MainActivity extends AppCompatActivity implements BeaconEvents {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
         }
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission( getApplicationContext(), android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
-
+            // Should we show an explanation?
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                        Manifest.permission.ACCESS_COARSE_LOCATION)) {
+                } else {
+                    // do request the permission
+                    ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 8);
+                }
+            }
+        }
 
 
         beaconMonitor.setURLFile(getAssets(), "properties.xml");
